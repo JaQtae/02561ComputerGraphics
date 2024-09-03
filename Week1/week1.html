@@ -5,12 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebGL Canvas</title>
 </head>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+attribute vec4 vColor;
+varying vec4 color;
+void main() 
+{
+    // gl_PointSize = 20.0; // Size of points in pixels
+    gl_Position = vPosition;
+    color = vColor;
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+varying vec4 color;
+void main()
+{
+    gl_FragColor = color; // Inherited from .js file
+}
+</script>
+
+<script src="../common/webgl-utils.js"></script>
+<script src="../common/initShaders.js"></script>
+<script src="../common/MV.js"></script>
+<script src="../common/webgl-debug.js"></script>
+<script src="../Week1/webgl_setup.js"></script>
+
+
 <body>
     <canvas id="gl-canvas" width="512" height="512"></canvas>
-    <script src="../common/webgl-utils.js"></script>
-    <script src="../common/MV.js"></script>
-    <script src="../common/webgl-debug.js"></script>
-    <script src="../common/initShaders.js"></script>
-    <script src="../Week1/webgl_setup.js"></script>
+
 </body>
 </html>
