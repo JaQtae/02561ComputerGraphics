@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 1 Part 3</title>
+</head>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+uniform float theta;
+void main()
+{ 
+    // Apply rotation using a rotation matrix
+    gl_Position.x = cos(theta) * vPosition.x - sin(theta) * vPosition.y;
+    gl_Position.y = sin(theta) * vPosition.x + cos(theta) * vPosition.y;
+    gl_Position.z = 0.0;
+    gl_Position.w = 1.0; 
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+uniform vec4 uColor;
+void main()
+{
+    gl_FragColor = uColor; // Inherited from .js file
+}
+</script>
+
+<script src="../common/webgl-utils.js"></script>
+<script src="../common/initShaders.js"></script>
+<script src="../common/MV.js"></script>
+<script src="../common/webgl-debug.js"></script>
+<script src="../Week1/w01p04.js"></script>
+
+
+<body>
+    <canvas id="gl-canvas" width="512" height="512"></canvas>
+
+</body>
+</html>
