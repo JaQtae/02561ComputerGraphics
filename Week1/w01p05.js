@@ -7,8 +7,8 @@ var gl;
 var vertices = []; // these change, so we need to update this list.
 var uColor;
 var translationLoc;
-var initHeight = -1.0; // Bottom of the canvas
-var bounceHeight = 1.0;
+var bounceStart = -1.0; // Bottom of the canvas
+var bounceHeight = 1.2;
 var bounceSpeed = 0.2;
 var time = 0.0; //  Track time for animation
 
@@ -67,7 +67,8 @@ function render() {
 
     // Calculate the y-translation using sine wave
     // radius (0.4), initHeight(-1.0), bounceHeight(1.0)
-    var bounce = radius + initHeight + bounceHeight * Math.abs(Math.sin(bounceSpeed * time));
+    // if to top, add radius/2 to the bounce height, for some reason???
+    var bounce = (bounceStart + radius) + (bounceHeight * Math.abs(Math.sin(bounceSpeed * time)));
     gl.uniform2fv(translationLoc, [0.0, bounce]);
     gl.drawArrays(gl.TRIANGLE_FAN, 0, vertices.length);
     requestAnimationFrame(render);
