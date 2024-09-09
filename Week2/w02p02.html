@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Drawing (W2P2) </title>
+    <!-- CSS styling -->
+    <style> 
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        label, select, button {
+            margin: 10px;
+        }
+        h1 {
+            color: #333;
+        }
+        #instruction {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+attribute vec4 vColor;
+varying vec4 pColor;
+
+void main() {
+    gl_PointSize = 20.0; // Size of points in pixels
+    gl_Position = vPosition;
+    pColor = vColor; 
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+varying vec4 pColor;
+
+void main() {
+    gl_FragColor = pColor; // Inherit from vertex shader
+}
+</script>
+
+<script src="../common/webgl-utils.js"></script>
+<script src="../common/initShaders.js"></script>
+<script src="../common/MV.js"></script>
+<script src="../common/webgl-debug.js"></script>
+<script src="../Week2/w02p02.js"></script>
+
+<body>
+    <h1>Interactive Canvas Drawing</h1>
+    <p id="instruction">Click on the canvas to add a point. You can also change the background and point colors!</p>
+
+    <!-- Canvas -->
+    <canvas id="gl-canvas" width="512" height="512"></canvas>
+
+    <!-- Buttons / Color selection -->
+    <div class="controls">
+        <label for="color-choice">Choose clear color:</label>
+        <select id="color-choice" name="color-choice">
+            <option value="black">Black</option>
+            <option value="red">Red</option>
+            <option value="yellow">Yellow</option>
+            <option value="green">Green</option>
+            <option value="magenta">Magenta</option>
+            <option value="cyan">Cyan</option>
+            <option value="white">White</option>
+            <option value="cornflowerblue" selected>Cornflower Blue</option>
+        </select>
+    </div>
+
+    <div class="controls">
+        <label for="point-color-choice">Choose point color:</label>
+        <select id="point-color-choice" name="point-color-choice">
+            <option value="black">Black</option>
+            <option value="red">Red</option>
+            <option value="yellow">Yellow</option>
+            <option value="green">Green</option>
+            <option value="magenta">Magenta</option>
+            <option value="cyan">Cyan</option>
+            <option value="white">White</option>
+            <option value="cornflowerblue" selected>Cornflower Blue</option>
+        </select>
+    </div>
+
+    <div class="controls">
+        <button id="clear-canvas">Clear Canvas</button>
+    </div>
+</body>
+</html>

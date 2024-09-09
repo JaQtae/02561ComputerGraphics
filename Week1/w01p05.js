@@ -13,7 +13,7 @@ var bounceSpeed = 0.2;
 var time = 0.0; //  Track time for animation
 
 // Circle variables
-var center = vec2(0.0, 0); // where the circle center initializes from
+var center = vec2(0.0, 0.0); // where the circle center initializes from
 var radius = 0.4;
 var numVertices = 100;
 
@@ -27,7 +27,6 @@ window.onload = function init() {
 
     // Circle w. TRIANGLE_FAN
     generateCircleVertices(center, radius, numVertices); 
-    
 
     //  Configure WebGL //
     gl.viewport(0, 0, canvas.width, canvas.height);
@@ -52,10 +51,8 @@ window.onload = function init() {
     uColor = gl.getUniformLocation(program, "uColor");
     gl.uniform4fv(uColor, [1.0, 1.0, 1.0, 1.0]); // White
 
-    // Translation uniform for bouncing
     translationLoc = gl.getUniformLocation(program, "uTranslation");
 
-    // Render the points
     render();
 };
 
@@ -66,8 +63,7 @@ function render() {
     time += 0.02; // Update bounce time
 
     // Calculate the y-translation using sine wave
-    // radius (0.4), initHeight(-1.0), bounceHeight(1.0)
-    // if to top, add radius/2 to the bounce height, for some reason???
+    // radius (0.4), initHeight(-1.0), bounceHeight(1.0), bounceSpeed(0.2)
     var bounce = (bounceStart + radius) + (bounceHeight * Math.abs(Math.sin(bounceSpeed * time)));
     gl.uniform2fv(translationLoc, [0.0, bounce]);
     gl.drawArrays(gl.TRIANGLE_FAN, 0, vertices.length);
