@@ -35,13 +35,13 @@ window.onload = function init() {
     var vBuffer = gl.createBuffer();
     // User input vars
     var shapeChoice = 0;
-    var clickNr = 0;
     var mousepos = vec2(0.0, 0.0);
     // Points, respective colors and bookkeeping variables
     var p = [];
     var color = vec4(0.0, 0.0, 0.0, 1.0);
     var color_list = [];
     var index = 0; var numPoints = 0;
+
 
     // Pre-allocate vertex buffer (vec2)
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
@@ -70,47 +70,15 @@ window.onload = function init() {
     canvas.addEventListener("click", function(ev){
     // Drawing logic for shapes: [Point, Triangle, Circle]
         if (shapeChoice === 0){
-            drawPoint(mousepos, color, cBuffer, vBuffer);
+            drawPoint(mousepos, color);
         } else if (shapeChoice === 1){
             drawTriangle(mousepos, color, vBuffer, cBuffer);
-        }
-        
+        } 
+
         render(gl, numPoints);
     });
 
-
-    // Button event listeners
-    var clearMenu = document.getElementById("clearMenu");
-    var clearButton = document.getElementById("clearButton");
-    
-
-    clearButton.addEventListener("click", function(ev){
-        var bgcolor = colors[clearMenu.selectedIndex];
-        index = 0;
-        numPoints = 0;
-        clickNr = 0;
-        gl.clearColor(bgcolor[0], bgcolor[1], bgcolor[2], bgcolor[3]);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        render(gl, numPoints);
-    });
-
-    var ColorMenu = document.getElementById("colorMenu");
-    ColorMenu.addEventListener("click", function(ev){
-        color = colors[ColorMenu.selectedIndex];
-    })
-
-    var pointButton = document.getElementById("drawPoint")
-    pointButton.addEventListener("click", function(ev){
-        shapeChoice = 0;
-    })
-    var triangleButton = document.getElementById("drawTriangle")
-    triangleButton.addEventListener("click", function(ev){
-        shapeChoice = 1;
-    })
-
-
-    // Functions
-    function drawPoint(mousepos, color, cBuffer, vBuffer) {
+    function drawPoint(mousepos, color){
         var x = mousepos[0]; // Capture mouse position
         var y = mousepos[1];
         var new_pos = [ 
@@ -128,6 +96,7 @@ window.onload = function init() {
         index %= max_verts;
     }
 
+    
     function drawTriangle(mousepos, color, vBuffer, cBuffer) {
         // Capture user inputs
         p.push(mousepos);
@@ -156,6 +125,34 @@ window.onload = function init() {
             color_list = [];
         }
     }
+
+    // Button event listeners
+    var clearMenu = document.getElementById("clearMenu");
+    var clearButton = document.getElementById("clearButton");
+    
+
+    clearButton.addEventListener("click", function(ev){
+        var bgcolor = colors[clearMenu.selectedIndex];
+        index = 0;
+        numPoints = 0;
+        gl.clearColor(bgcolor[0], bgcolor[1], bgcolor[2], bgcolor[3]);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        render(gl, numPoints);
+    });
+
+    var ColorMenu = document.getElementById("colorMenu");
+    ColorMenu.addEventListener("click", function(ev){
+        color = colors[ColorMenu.selectedIndex];
+    })
+
+    var pointButton = document.getElementById("drawPoint")
+    pointButton.addEventListener("click", function(ev){
+        shapeChoice = 0;
+    })
+    var triangleButton = document.getElementById("drawTriangle")
+    triangleButton.addEventListener("click", function(ev){
+        shapeChoice = 1;
+    })
 
     function render(gl, numPoints)
     {

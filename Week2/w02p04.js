@@ -75,7 +75,7 @@ window.onload = function init() {
     canvas.addEventListener("click", function(ev){
     // Drawing logic for shapes: [Point, Triangle, Circle]
         if (shapeChoice === 0){
-            drawPoint(mousepos, color, vBuffer, cBuffer);
+            drawPoint(mousepos, color);
         } else if (shapeChoice === 1){
             drawTriangle(mousepos, color, vBuffer, cBuffer);
         } else if (shapeChoice === 2){
@@ -119,6 +119,53 @@ window.onload = function init() {
         render(gl, numPoints);
     });
 
+    function drawPoint(mousepos, color){
+        var x = mousepos[0]; // Capture mouse position
+        var y = mousepos[1];
+        var new_pos = [ 
+            vec2(x+0.05, y+0.05), vec2(x+0.05, y-0.05), vec2(x-0.05, y+0.05),
+            vec2(x+0.05, y-0.05), vec2(x-0.05, y+0.05), vec2(x-0.05, y-0.05), // two triangles representing square  --> vBuffer (6 vertices)
+        ];
+        var new_col = [color, color, color, color, color, color];
+    
+        gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, index*sizeof['vec4'], flatten(new_col));
+        gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, index*sizeof['vec2'], flatten(new_pos));
+        index += 6;
+        numPoints = Math.max(numPoints, index); 
+        index %= max_verts;
+    }
+
+    
+    function drawTriangle(mousepos, color, vBuffer, cBuffer) {
+        // Capture user inputs
+        p.push(mousepos);
+        color_list.push(color);
+
+        // Check if we have enough points to draw the triangle
+        if (p.length < 3) {
+            drawPoint(mousepos, vec4(0.0, 0.0, 0.0, 0.5)); // Temporary points (vertices #1 and #2)
+        } else {
+            // Clear temporary points from buffer
+            index -= 12;
+            numPoints -= 12;
+
+            // Update buffers
+            gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, index * sizeof['vec4'], flatten(color_list));
+            gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, index * sizeof['vec2'], flatten(p));
+
+            // Add the 3 vertices of the triangle and update index/etc. for next draw!
+            index += 3; 
+            numPoints = Math.max(numPoints, index); 
+            index %= max_verts;
+
+            p = []; 
+            color_list = [];
+        }
+    }
 
     // Button event listeners
     var clearMenu = document.getElementById("clearMenu");
@@ -153,55 +200,7 @@ window.onload = function init() {
     circleButton.addEventListener("click", function(ev){
         shapeChoice = 2;
     })
-
-    // Functions
-    function drawPoint(mousepos, color, cBuffer, vBuffer) {
-        var x = mousepos[0]; // Capture mouse position
-        var y = mousepos[1];
-        var new_pos = [ 
-            vec2(x+0.05, y+0.05), vec2(x+0.05, y-0.05), vec2(x-0.05, y+0.05),
-            vec2(x+0.05, y-0.05), vec2(x-0.05, y+0.05), vec2(x-0.05, y-0.05), // two triangles representing square  --> vBuffer (6 vertices)
-        ];
-        var new_col = [color, color, color, color, color, color];
     
-        gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, index*sizeof['vec4'], flatten(new_col));
-        gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, index*sizeof['vec2'], flatten(new_pos));
-        index += 6;
-        numPoints = Math.max(numPoints, index); 
-        index %= max_verts;
-    }
-
-    function drawTriangle(mousepos, color, vBuffer, cBuffer) {
-        // Capture user inputs
-        p.push(mousepos);
-        color_list.push(color);
-
-        // Check if we have enough points to draw the triangle
-        if (p.length < 3) {
-            drawPoint(mousepos, vec4(0.0, 0.0, 0.0, 0.5)); // Temporary points (vertices #1 and #2)
-        } else {
-            // Clear temporary points from buffer
-            index -= 12;
-            numPoints -= 12;
-
-            // Update buffers
-            gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
-            gl.bufferSubData(gl.ARRAY_BUFFER, index * sizeof['vec4'], flatten(color_list));
-            gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
-            gl.bufferSubData(gl.ARRAY_BUFFER, index * sizeof['vec2'], flatten(p));
-
-            // Add the 3 vertices of the triangle and update index/etc. for next draw!
-            index += 3; 
-            numPoints = Math.max(numPoints, index); 
-            index %= max_verts;
-
-            p = []; 
-            color_list = [];
-        }
-    }
-
     function render(gl, numPoints)
     {
     gl.clear(gl.COLOR_BUFFER_BIT);
