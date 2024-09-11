@@ -43,6 +43,11 @@ window.onload = function init() {
     var color_list = [];
     var index = 0; var numPoints = 0;
 
+    // Circle stuff
+    var points_in_circ = 300;
+    var center = vec2(0.0);
+    var r = 0.0;    
+
     // Pre-allocate vertex buffer (vec2)
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, max_verts*sizeof['vec2'], gl.STATIC_DRAW);
@@ -70,11 +75,47 @@ window.onload = function init() {
     canvas.addEventListener("click", function(ev){
     // Drawing logic for shapes: [Point, Triangle, Circle]
         if (shapeChoice === 0){
-            drawPoint(mousepos, color, cBuffer, vBuffer);
+            drawPoint(mousepos, color, vBuffer, cBuffer);
         } else if (shapeChoice === 1){
             drawTriangle(mousepos, color, vBuffer, cBuffer);
+        } else if (shapeChoice === 2){
+            var theta = 0.0;
+            if (clickNr === 1){
+                r = Math.sqrt(Math.pow((center[0]-mousepos[0]),2)+Math.pow((center[1]-mousepos[1]),2));
+                var init_pos = mousepos;
+                for (let i = 0; i < (points_in_circ + 2); i++){ // +2 padding to close the circle. Fill out circle.
+                    p = [];
+                    color_list = [];
+                    theta = 2 * Math.PI * i / points_in_circ;
+                    let position = vec2(
+                        r * Math.cos(theta) + center[0], // x
+                        r * Math.sin(theta) + center[1] // y
+                    );
+                    // Add vertice data to lists
+                    p.push(center);
+                    p.push(init_pos);
+                    p.push(position);
+                    color_list.push(color);
+                    color_list.push(color);
+                    color_list.push(color);
+                    // Update buffers
+                    gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+                    gl.bufferSubData(gl.ARRAY_BUFFER, index*sizeof['vec4'], flatten(color_list));
+                    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+                    gl.bufferSubData(gl.ARRAY_BUFFER, index*sizeof['vec2'], flatten(p));
+                    // Bookkeeping
+                    index += 3;
+                    numPoints = Math.max(numPoints, index); 
+                    index %= max_verts;
+                    init_pos = position;
+                    clickNr = 0; // Reset so next click is center.
+                }
+            } else if (clickNr === 0) {
+                clickNr = 1; // First click = center of the circle.
+                center = mousepos;
+            }   
         }
-        
+
         render(gl, numPoints);
     });
 
@@ -108,6 +149,10 @@ window.onload = function init() {
         shapeChoice = 1;
     })
 
+    var circleButton = document.getElementById("drawCircle")
+    circleButton.addEventListener("click", function(ev){
+        shapeChoice = 2;
+    })
 
     // Functions
     function drawPoint(mousepos, color, cBuffer, vBuffer) {
