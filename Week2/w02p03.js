@@ -91,7 +91,7 @@ window.onload = function init() {
         gl.bufferSubData(gl.ARRAY_BUFFER, index*sizeof['vec4'], flatten(new_col));
         gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, index*sizeof['vec2'], flatten(new_pos));
-        index += 6;
+        index += 6; // Update index for new points
         numPoints = Math.max(numPoints, index); 
         index %= max_verts;
     }
