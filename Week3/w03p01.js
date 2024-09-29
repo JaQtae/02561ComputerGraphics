@@ -1,24 +1,11 @@
-var indices = [
-    1, 0, 3,
-    3, 2, 1,
-    2, 3, 7, 
-    7, 6, 2, 
-    3, 0, 4, 
-    4, 7, 3, 
-    6, 5, 1, 
-    1, 2, 6, 
-    4, 5, 6, 
-    6, 7, 4, 
-    5, 4, 0, 
-    0, 1, 5
-];
 // indices are connections between all points, see. p168 of book
-var indices_line = [
+const indices_line = [
 1,0,   1,2,   2,3,  0,3,    // Face A (front)
 3,7,   7,6,   2,6,          // Face B (right)
 0,4,   1,5,   5,4,          // Face C (left) 
 5,6,   4,7,                 // Face D (bottom) 
-];
+];                          // Face E/F (top/back) is not needed
+
 
 //   v5--------v6
 //  / |        / |
@@ -41,7 +28,7 @@ vec4(  0.5,  0.5, -0.5, 1.0 ),
 vec4(  0.5, -0.5, -0.5, 1.0 )
 ];
      
-var vertexColors = [
+const vertexColors = [
     vec4(0.0, 0.0, 0.0, 1.0),  // black
     vec4(1.0, 0.0, 0.0, 1.0),  // red
     vec4(1.0, 1.0, 0.0, 1.0),  // yellow
@@ -111,7 +98,8 @@ gl.enableVertexAttribArray(vColor);
 
 // View Matrix location
 vLoc = gl.getUniformLocation(program, 'modelViewMatrix')
-const at = vec3(1.0, 1.0, 1.0);
+// Cube should be in the world coordinate system with diagonal (0,0,0) to (1,1,1)
+const at = vec3(1.0, 1.0, 1.0);  // We're looking from the top right towards the bottom left
 const up = vec3(0.0, 1.0, 0.0);
 const eye = vec3(0,0,0);
 v = lookAt(eye, at, up); // view matrix

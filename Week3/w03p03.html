@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input devices and interaction (W2)</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+        }
+        h1 {
+            color: #333;
+            margin-top: 20px;
+            font-size: 24px;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #333;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .footer {
+            margin-top: auto;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+
+    <!-- Load MathJax -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+    <h1>Theory Reflection (Week 3 Part 3)</h1>
+
+    <ul>
+        <b> Part 1: Isometric Cube </b>
+    </ul>
+    <p>
+    The <code>lookAt</code> function was used, hence the view matrix <b>V</b> was used as <code>CTM</code>. 
+    It requires the <code>eye</code> (<b>e</b>), <code>up</code> (<b>u</b>), and <code>at</code> (<b>a</b>) vectors, which combined indicate 
+    the position and angle of the camera view from the onlooker in a 3D space. It is calculated as follows:
+    \[ 
+    \mathbf{V} = \mathbf{RT}, \text{  where  }~~
+    \mathbf{T} =
+    \begin{bmatrix}
+    \mathbf{I}_3 & -\mathbf{e} \\
+    \mathbf{0} & 1
+    \end{bmatrix}
+    \]
+    </p>
+    <p>
+        The rotation matrix can be defined as either of the following standard definition, e.g. around the y-axis:
+    \[
+    R_y(\theta) = \begin{bmatrix}
+    \cos(\theta) & 0 & \sin(\theta) & 0 \\
+    0 & 1 & 0 & 0 \\
+    -\sin(\theta) & 0 & \cos(\theta) & 0 \\
+    0 & 0 & 0 & 1
+    \end{bmatrix}
+    \]
+    Or using basis vectors <b>b</b> around the camera's local coordinate system, it can be defined as:
+    \[
+    R = \begin{bmatrix}
+    \mathbf{b}_1 & \mathbf{b}_2 & \mathbf{b}_3
+    \end{bmatrix} ^T~~,~~ \text{where}~~ \mathbf{b}_1 = \frac{\mathbf{u} \times \mathbf{b_3}}{||\mathbf{u} \times \mathbf{b_3}||}~~,~~ \mathbf{b}_2 = \mathbf{b_3} \times \mathbf{b_1}~~,~~ \mathbf{b}_3 = \frac{\mathbf{e} - \mathbf{a}}{||\mathbf{e} - \mathbf{a}||}
+    \]
+    </p>
+
+    <ul>
+        <b> Part 2: 1-2-3 point Cubes </b>
+    </ul>
+    <p>
+        This case requires projection <b>P</b>, view <b>V</b>, and model <b>M</b> matrices to be defined as the <code>CTM</code> becomes <b>PVM=PV(TR)</b>.
+        <br>The projection matrix stayed the same for all three cubes. As mentioned above, <b>V</b> was defined using the <code>lookAt()</code> function.
+        <br>The projection matrix <b>P</b> was defined as:
+        \[
+        \mathbf{P} = \begin{bmatrix}
+        \frac{1}{A \cdot \tan(\frac{\alpha}{2})} & 0 & 0 & 0 \\
+        0 & \frac{1}{\tan(\frac{\alpha}{2})} & 0 & 0 \\
+        0 & 0 & -\frac{n + f}{f - n} & -\frac{2nf}{f - n} \\
+        0 & 0 & -1 & 0
+        \end{bmatrix}
+        \]
+        where \(A\) is the aspect ratio, \(\alpha\) is the field of view, and \(n\) and \(f\) are the near and far planes, respectively. WebGL takes in degrees, but the matrix expects radians.
+        <br> The model matrix <b>M</b> consists of a translation and following rotation matrix, e.g. \(M=TR\). 
+        <br> In order to get the resulting cubes, the first is translated to the left (negative x-direction), and rotated about its y-axis by 45 degrees.
+        <br> The second is not rotated nor translated, while the third is translated to the right and rotated about its x-axis and y-axis by 20 degrees, respectively.
+    </p>
+
+
+
+    <div class="footer">
+        Worksheet for 02561 Computer Graphics at DTU (E24) by Jakob Ketmig
+    </div>
+
+</body>
+</html>
