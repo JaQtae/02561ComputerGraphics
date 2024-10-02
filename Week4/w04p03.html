@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workseet 4.1</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+        }
+        h1 {
+            color: #333;
+            margin-top: 20px;
+            font-size: 24px;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #333;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        select {
+            padding: 5px;
+            margin-top: 10px;
+            font-size: 16px;
+            width: 150px;
+            height: auto;
+            cursor: pointer;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #388a3c;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .footer {
+            margin-top: auto;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gourad Shading w. Orbiting Sphere (Week 4 Part 3)</h1>
+
+    <canvas id="gl-canvas" width="512" height="512"></canvas>
+    <button id="increment">Increment subdivision (+)</button>
+    <button id="decrement">Decrement subdivision (-)</button>
+
+    <div class="footer">
+        Worksheet for 02561 Computer Graphics at DTU (E24) by Jakob Ketmig
+    </div>
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        precision mediump float;
+        
+        attribute vec4 vPosition;
+        attribute vec4 vColor;
+        varying vec4 fColor;
+
+        uniform mat4 viewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat4 modelMatrix;
+
+        varying vec3 L_rd;
+        attribute vec4 vNormal;
+
+        uniform vec4 lightPosition;
+        uniform vec3 L_i;
+        uniform float k_d;
+
+        void main() {
+            gl_PointSize = 20.0;
+            gl_Position = projectionMatrix * viewMatrix * modelMatrix * vPosition;
+
+            vec4 normal = (modelMatrix * viewMatrix * vNormal);
+            vec4 pos = (modelMatrix * viewMatrix * vPosition);
+
+            vec3 L = (viewMatrix * lightPosition).xyz;
+            vec3 w_i = lightPosition.w == 0.0 ? normalize(L) : normalize(L - pos.xyz);
+
+            L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * vColor.xyz;
+            fColor = vColor; 
+        }
+        
+
+        </script>
+        
+        <script id="fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec4 fColor;
+        
+        void main() {
+            gl_FragColor = fColor; // Inherit from vertex shader
+        }
+        </script>
+        
+        <script src="../common/webgl-utils.js"></script>
+        <script src="../common/initShaders.js"></script>
+        <script src="../common/MV.js"></script>
+        <script src="../common/webgl-debug.js"></script>
+        <script src="../Week4/w04p03.js"></script>
+</body>
+</html>
