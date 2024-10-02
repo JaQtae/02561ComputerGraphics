@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Worksheet 3.1</title>
+    <title>Workseet 4.1</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -71,29 +71,28 @@
     </style>
 </head>
 <body>
-    <h1>Isometric Cube (Week 3 Part 1)</h1>
+    <h1>Tetrahedon -> Sphere (Week 4 Part 1)</h1>
 
     <canvas id="gl-canvas" width="512" height="512"></canvas>
+    <button id="increment">Increment subdivision (+)</button>
+    <button id="decrement">Decrement subdivision (-)</button>
 
     <div class="footer">
         Worksheet for 02561 Computer Graphics at DTU (E24) by Jakob Ketmig
     </div>
 
-    <script src="../common/webgl-utils.js"></script>
-    <script src="../common/initShaders.js"></script>
-    <script src="../common/MV.js"></script>
-    <script src="../common/webgl-debug.js"></script>
-    <script src="../Week3/w03p01.js"></script>
-
     <script id="vertex-shader" type="x-shader/x-vertex">
         attribute vec4 vPosition;
         attribute vec4 vColor;
         varying vec4 fColor;
-        uniform mat4 modelViewMatrix;
+
+        uniform mat4 viewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat4 modelMatrix;
         
         void main() {
             gl_PointSize = 20.0; // Size of points in pixels
-            gl_Position = modelViewMatrix * vPosition;
+            gl_Position = projectionMatrix * viewMatrix * modelMatrix * vPosition;
             fColor = vColor; 
         }
         </script>
@@ -107,6 +106,10 @@
         }
         </script>
         
-        
+        <script src="../common/webgl-utils.js"></script>
+        <script src="../common/initShaders.js"></script>
+        <script src="../common/MV.js"></script>
+        <script src="../common/webgl-debug.js"></script>
+        <script src="../Week4/w04p01.js"></script>
 </body>
 </html>
