@@ -52,9 +52,7 @@ window.onload = function init() {
     gl.vertexAttribPointer(gl.vPosition, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(gl.vPosition);
 
-    // gl.vColor = gl.getAttribLocation(gl.program, "vColor");
-    // gl.vertexAttribPointer(gl.vColor, 4, gl.FLOAT, false, 0, 0);
-    // gl.enableVertexAttribArray(gl.vColor);
+    // Color is derived from the shader in the HTML using the formula
 
     // View Matrix location
     vLoc = gl.getUniformLocation(gl.program, 'viewMatrix')
@@ -78,7 +76,7 @@ window.onload = function init() {
 
 
 function triangle(a, b, c) {
-    pointsArray.push(a);
+    pointsArray.push(a); 
     pointsArray.push(b);
     pointsArray.push(c);
 }
