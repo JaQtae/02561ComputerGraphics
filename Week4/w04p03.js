@@ -1,7 +1,6 @@
 var color;
 var colors = []
-var numSubdivs = 1;
-const rotationSpeed = 0.01; 
+var numSubdivs = 2;
 var pointsArray = [];
 var nArray = [];
 var loaded = 1;
@@ -42,19 +41,26 @@ window.onload = function init() {
     initSphere(gl, numSubdivs);
 
     // Buttons
+    document.getElementById("subdiv-count").innerHTML = "Subdivisions: " + numSubdivs;
     document.getElementById("increment").onclick = function(){
         if (numSubdivs < 7) {  // Cap subdivisions to prevent slowdowns/redundancy
             numSubdivs++;
             reset_arrays();
             loaded = 0;
             init();
-        }
+            if (numSubdivs == 7) {
+                document.getElementById("subdiv-count").innerHTML = "Subdivisions: " + numSubdivs + " (Max)";
+            } else {
+                document.getElementById("subdiv-count").innerHTML = "Subdivisions: " + numSubdivs;
+            }
+        };
     };
     document.getElementById("decrement").onclick = function(){
         if(numSubdivs > 0) numSubdivs--;
         reset_arrays();
         loaded = 0;
         init();
+        document.getElementById("subdiv-count").innerHTML = "Subdivisions: " + numSubdivs;
     };
 
     // Vertex buffer(s)
