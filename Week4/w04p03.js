@@ -1,28 +1,32 @@
-var gl; var canvas; var program;
 var color;
 var colors = []
 var numSubdivs = 1;
 const rotationSpeed = 0.01; 
 var pointsArray = [];
 var nArray = [];
+var loaded = 1;
 var v, p, m, vLoc, pLoc, mLoc;
 // Transforms
 const T = translate(0.0, 0.0, 0.0);
-var R = rotate(alpha, [0, 1, 0]);
+const R = mat4(); // Identity matrix
 // LookAt()
 const at = vec3(0.0, 0.0, 0.0);
 const up = vec3(0.0, 1.0, 0.0);
 
+const fovy = 45;
+const near = 0.001;
+const far = 5;
+
 var radius = 3; var alpha = 0.0; var orbit = 1;
-var L_e = L_i = vec3(1.0, 1.0, 1.0); // Light emission = incident light (L_i) (if V = 1 as visibility(V) * L_e)
+var L_e = vec3(1.0, 1.0, 1.0); // Light emission = incident light (L_i) (if V = 1 as visibility(V) * L_e)
+var L_i = L_e;
 var l_dir = vec3(0.0, 0.0, -1.0); // Direction of light source
 var k_d = 1.0; // Diffuse reflection coefficient
-var lightPosition = vec4(0.0, 0.0, -1.0, 0.0); // Oppossite light direction
-var lightPositionLoc, l_iLoc, k_dLoc;
+var lightPosition = vec4(0.0, 0.0, 1.0, 0.0); // Oppossite light direction
 
 window.onload = function init() {
-    canvas = document.getElementById("gl-canvas");
-    gl = WebGLUtils.setupWebGL(canvas); 
+    var canvas = document.getElementById("gl-canvas");
+    var gl = WebGLUtils.setupWebGL(canvas); 
     if (!gl) { 
         alert("WebGL isn't available"); 
     }
@@ -34,22 +38,22 @@ window.onload = function init() {
     gl.cullFace(gl.BACK);      // Cull the back faces (default)
     gl.frontFace(gl.CCW);      // Counter-clockwise winding is the front face (default)
     
-
-    program = initShaders(gl, "vertex-shader", "fragment-shader");
+    var program = initShaders(gl, "vertex-shader", "fragment-shader");
     initSphere(gl, numSubdivs);
-
 
     // Buttons
     document.getElementById("increment").onclick = function(){
         if (numSubdivs < 7) {  // Cap subdivisions to prevent slowdowns/redundancy
             numSubdivs++;
             reset_arrays();
+            loaded = 0;
             init();
         }
     };
     document.getElementById("decrement").onclick = function(){
         if(numSubdivs > 0) numSubdivs--;
         reset_arrays();
+        loaded = 0;
         init();
     };
 
@@ -62,6 +66,7 @@ window.onload = function init() {
     gl.vertexAttribPointer(gl.vPosition, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(gl.vPosition);
 
+    // Normals buffer(s)
     gl.nBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.nBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(nArray), gl.STATIC_DRAW);
@@ -70,6 +75,7 @@ window.onload = function init() {
     gl.vertexAttribPointer(vNormal, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vNormal);
 
+    // Color buffer(s)
     gl.cBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.cBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
@@ -79,15 +85,44 @@ window.onload = function init() {
     gl.enableVertexAttribArray(vColor);
 
     // View Matrix location
-    vLoc = gl.getUniformLocation(program, 'viewMatrix')
-    pLoc = gl.getUniformLocation(program, 'projectionMatrix');
-    mLoc = gl.getUniformLocation(program, 'modelMatrix');
+    var vLoc = gl.getUniformLocation(program, 'viewMatrix')
+    var pLoc = gl.getUniformLocation(program, 'projectionMatrix');
+    var mLoc = gl.getUniformLocation(program, 'modelMatrix');
     // Gourad shading parameters
     var lightPositionLoc = gl.getUniformLocation(program, 'lightPosition')
     var l_iLoc = gl.getUniformLocation(program, 'L_i')
     var k_dLoc = gl.getUniformLocation(program, 'k_d')
 
-    render();
+    if (loaded) {
+        render();
+    }
+
+    function render() {
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        if (orbit == 1) {
+            alpha += 0.01; // rotate camera
+        }
+        var eye = vec3(radius * Math.sin(alpha), 0, radius * Math.cos(alpha));
+        
+        // Recalculate every render
+        v = lookAt(eye, at, up);  // Update the view matrix based on the rotating eye position
+        p = perspective(fovy, canvas.width / canvas.height, near, far); // projection matrix
+    
+        gl.useProgram(program);
+
+        m = mult(T, R); // identity matrix and no translation
+        gl.uniformMatrix4fv(pLoc, false, flatten(p));
+        gl.uniformMatrix4fv(vLoc, false, flatten(v));
+        gl.uniformMatrix4fv(mLoc, false, flatten(m));
+        
+        gl.uniform4f(lightPositionLoc, lightPosition[0], lightPosition[1], lightPosition[2], lightPosition[3]);
+        gl.uniform3f(l_iLoc, L_i[0], L_i[1], L_i[2]);
+        gl.uniform1f(k_dLoc, k_d);
+
+        gl.drawArrays(gl.TRIANGLES, 0, pointsArray.length);
+    
+        requestAnimationFrame(render);
+    }
 };
 
 
@@ -106,6 +141,7 @@ function triangle(a, b, c) {
 }
 
 function divideTriangle(a, b, c, count) {
+
     if ( count > 0 ) {
  
         var ab = normalize(mix( a, b, 0.5), true);
@@ -150,37 +186,4 @@ function reset_arrays() {
     pointsArray = [];
     nArray = [];
     colors = [];
-}
-
-function three_point() {
-    m = mult(translate(0.0, 0.0, 0.0), rotate(alpha, [0, 1, 0]));
-    gl.uniformMatrix4fv(pLoc, false, flatten(p));
-    gl.uniformMatrix4fv(vLoc, false, flatten(v));
-    gl.uniformMatrix4fv(mLoc, false, flatten(m));
-    gl.drawArrays(gl.TRIANGLES, 0, pointsArray.length); // Triangles now
-}
-    
-function render() {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    if (orbit == 1) {
-        alpha += 0.01 / (numSubdivs + 1); // Speed of orbit constant
-    }
-    var eye = vec3(radius * Math.sin(alpha), 0, radius * Math.cos(alpha));
-    
-    const fovy = 45;
-    const aspect = canvas.width / canvas.height;
-    const near = 0.1;
-    const far = 6;
-    // Recalculate every render
-    v = lookAt(eye, at, up);  // Update the view matrix based on the rotating eye position
-    p = perspective(fovy, aspect, near, far); // projection matrix
-
-    gl.useProgram(program);
-    three_point();
-
-    gl.uniform4f(lightPositionLoc, lightPosition[0], lightPosition[1], lightPosition[2], lightPosition[3]);
-    gl.uniform3f(l_iLoc, L_i[0], L_i[1], L_i[2]);
-    gl.uniform1f(k_dLoc, k_d);
-
-    requestAnimationFrame(render);
 }

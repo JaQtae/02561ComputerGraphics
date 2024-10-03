@@ -83,7 +83,7 @@
 
     <script id="vertex-shader" type="x-shader/x-vertex">
         precision mediump float;
-        
+
         attribute vec4 vPosition;
         attribute vec4 vColor;
         varying vec4 fColor;
@@ -92,7 +92,7 @@
         uniform mat4 projectionMatrix;
         uniform mat4 modelMatrix;
 
-        varying vec3 L_rd;
+        varying vec3 diffuseColor;
         attribute vec4 vNormal;
 
         uniform vec4 lightPosition;
@@ -109,8 +109,10 @@
             vec3 L = (viewMatrix * lightPosition).xyz;
             vec3 w_i = lightPosition.w == 0.0 ? normalize(L) : normalize(L - pos.xyz);
 
-            L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * vColor.xyz;
-            fColor = vColor; 
+            float lightAmbient = 0.1;
+            vec3 diffuseColor = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) + lightAmbient * vColor.xyz;
+            
+            fColor = vec4(diffuseColor, 1.0); 
         }
         
 
