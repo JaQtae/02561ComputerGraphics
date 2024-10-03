@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workseet 4.3</title>
+    <title>Workseet 4.4</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -69,15 +69,50 @@
             color: #777;
         }
     </style>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-    <h1>Gourad Shading w. Orbiting Sphere (Week 4 Part 3)</h1>
+    <h1>Phong reflection w. sliders (Week 4 Part 4)</h1>
 
     <canvas id="gl-canvas" width="512" height="512"></canvas>
+    <div id="subdiv-count"><b>Subdivisions</b>: 1</div>
     <button id="increment">Increment subdivision (+)</button>
     <button id="decrement">Decrement subdivision (-)</button>
+
     
-    <div id="subdiv-count">Subdivisions: 1</div>
+    <div class="controls">
+        <div class="control-group">
+            <label> Emitted radiance \(L_e\):</label>
+            <input id="L_e" type="range" min="0" max="2" step="0.1" value="1" oninput="updateValue('L_e_val', this.value)" />
+            <span class="value" id="L_e_val">1</span>
+        </div>
+
+        <div class="control-group">
+            <label> Ambient coeff. \(k_a\):</label>
+            <input id="K_a" type="range" min="0" max="1" step="0.05" value="0.1" oninput="updateValue('K_a_val', this.value)" />
+            <span class="value" id="K_a_val">0.1</span>
+        </div>
+
+        <div class="control-group">
+            <label> Diffuse coeff. \(k_d\):</label>
+            <input id="K_d" type="range" min="0" max="1" step="0.05" value="0.5" oninput="updateValue('K_d_val', this.value)" />
+            <span class="value" id="K_d_val">1.0</span>
+        </div>
+
+        <div class="control-group">
+            <label> Specular coeff. \(k_s\):</label>
+            <input id="K_s" type="range" min="0" max="1" step="0.05" value="0.5" oninput="updateValue('K_s_val', this.value)" />
+            <span class="value" id="K_s_val">0.5</span>
+        </div>
+
+        <div class="control-group">
+            <label> Shininess \(s\):</label>
+            <input id="s" type="range" min="1" max="100" step="1" value="20" oninput="updateValue('s_val', this.value)" />
+            <span class="value" id="s_val">50</span>
+        </div>
+    </div>
+
 
     <div class="footer">
         Worksheet for 02561 Computer Graphics at DTU (E24) by Jakob Ketmig
@@ -88,14 +123,17 @@
 
         attribute vec4 vPosition;
         attribute vec4 vColor;
-        varying vec4 fColor;
+        attribute vec4 vNormal;
 
         uniform mat4 viewMatrix;
         uniform mat4 projectionMatrix;
         uniform mat4 modelMatrix;
 
-        varying vec3 diffuseColor;
-        attribute vec4 vNormal;
+        varying vec4 fColor;
+        varying vec3 L_rd; // Lambertian Reflection (Diffuse)
+        varying vec3 L_rs; // Phong Reflection (Specular)
+        varying vec3 L_ra; // Ambient Reflection
+        varying vec3 L_o; // Total reflected light
 
         uniform vec4 lightPosition;
         uniform vec3 L_i; // Incident light
@@ -104,6 +142,8 @@
         uniform float k_s; // Specular reflection coefficient
         uniform float s; // Shininess coefficient
 
+        
+
         void main() {
             gl_PointSize = 20.0;
             gl_Position = projectionMatrix * viewMatrix * modelMatrix * vPosition;
@@ -111,14 +151,23 @@
             vec4 normal = (modelMatrix * viewMatrix * vNormal);
             vec4 pos = (modelMatrix * viewMatrix * vPosition);
 
-            vec3 L = (viewMatrix * lightPosition).xyz;
-            vec3 w_i = lightPosition.w == 0.0 ? normalize(L) : normalize(L - pos.xyz); // Incoming light 
+            vec3 L = (viewMatrix * lightPosition).xyz; // light
 
-            float k_a = 0.1;
-            // L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) -- [Lambertian Shading]
-            vec3 diffuseColor = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * vColor.xyz + k_a * vColor.xyz;
-            
-            fColor = vec4(diffuseColor, 1.0); 
+            // Directions
+            vec3 w_i = lightPosition.w == 0.0 ? normalize(L) : normalize(L - pos.xyz); // Incoming light 
+            vec3 w_o = - normalize((viewMatrix * pos).xyz); // Viewing direction (surface to eye)
+            vec3 w_r = 2.0 * dot(w_i, normalize(normal.xyz)) * normalize(normal.xyz) - w_i; // Reflected light
+
+            // For this part L_a = L_d = L_s = L_e, so L_i will be used
+
+            L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * vColor.xyz + k_a * vColor.xyz;
+            // Final float(-) part fixes some issues, as two surfaces "light up" when they should not
+            L_rs = k_s * L_i * pow(max(dot(w_r, w_o), 0.0), s) * float(dot(w_i, normalize(normal.xyz)) > 0.0);
+            L_ra = k_a * L_i;
+
+            L_o = L_rd + L_rs + L_ra;
+
+            fColor = vec4(L_o, 1.0); 
         }
         
 
@@ -137,6 +186,6 @@
         <script src="../common/initShaders.js"></script>
         <script src="../common/MV.js"></script>
         <script src="../common/webgl-debug.js"></script>
-        <script src="../Week4/w04p03.js"></script>
+        <script src="../Week4/w04p04.js"></script>
 </body>
 </html>
