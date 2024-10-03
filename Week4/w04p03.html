@@ -110,7 +110,7 @@
             vec3 w_i = lightPosition.w == 0.0 ? normalize(L) : normalize(L - pos.xyz);
 
             float lightAmbient = 0.1;
-            vec3 diffuseColor = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) + lightAmbient * vColor.xyz;
+            vec3 diffuseColor = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * vColor.xyz + lightAmbient * vColor.xyz;
             
             fColor = vec4(diffuseColor, 1.0); 
         }
