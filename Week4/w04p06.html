@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worksheet 4.6</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: left;
+            margin: 20px;
+            padding: 0;
+            background-color: #b1adadd8;
+            display: flex;
+            flex-direction: column;
+            align-items: left;
+            height: 80vh;
+        }
+        h1 {
+            color: #333;
+            margin-top: 20px;
+            font-size: 24px;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #333;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .footer {
+            margin-top: auto;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+
+    <!-- Load MathJax -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+    <h1>Theory Reflection (Week 4 Part 6)</h1>
+
+
+    <ul>
+        <li><b>A) What is the difference between Phong shading and Phong lighting (the Phong reflection model)?</b></li>
+        <p>Phong lighting is a reflection model used to calculate the light intensity on a surface by considering ambient, diffuse, and specular components.
+        <br>The latter makes objects appear shiny by simulating the reflection of light sources.
+        </p>
+        <p>Phong shading, on the other hand, refers to interpolating surface normals and calculating the light intensity at each pixel to achieve smooth shading.
+        <br>This is in contrast to the Gourad shading prior to it, which linearly interpolates the triangle meshes of the object to determine pixel color.
+        <p>Phong shading is computationally more expensive but produces more realistic results, as is evident from parts 4 to 5 of this worksheet.
+        </p>
+        
+
+        <li><b>B) What is the difference between flat shading, Gouraud shading, and Phong shading?</b></li>
+        <p><b>Flat shading:</b> Simplest form of shading as the lighting is calculated once per polygon. It's fast, but the results are unrealistic and faceted.<br>
+        <b>Gouraud shading:</b> Linearly interpolates across triangle vertices. As previously stated, it is more smooth than Simple Shading and faster than Phong, but the specular highlights can "miss" if they fall between vertices. <br>
+        <b>Phong shading:</b> Normals are interpolated across the surface and lighting computed on a pixel-wise level. As stated, it's smoother than its counterparts, but is more expensive computationally.<br>
+        </p>    
+        <p>Phong shading is the best suited for highlight simulation due to its per-pixel computation of the lighting using \(s\). </p>
+
+        <li><b>C) What is the difference between a directional light and a point light?</b></li>
+        <p>Directional light is akin to sunlight as it originates from a source with an infinite distance (or very long distance away) with parallel rays, while point light emanates from a specific point in all directions, such as close-by illumination objects like a light-bulb.</p>
+
+        <li><b>D) Does the eye position influence the shading of an object in any way?</b></li>
+        <p>For sure, it affects the specular reflection! The dot product between the observer's direction \(w_o\) and the reflection vector \(w_r\) determines the intensity of the specular highlight, e.g. large values create a more shiny surface intensity.</p>
+
+        <li><b>E) What is the effect of setting the specular term to (0, 0, 0)?</b></li>
+        <p>This removes all specular reflections, making the surface appear completely matte, which can be seen with use of the sliders on the worksheet.</p>
+
+        <li><b>F) What is the effect of increasing the shininess exponent (𝛼)?</b></li>
+        <p>This would result in a smaller and more focused highlight zone, making the object appear more glossy, while lower values make the highlight surface larger.</p>
+
+        <li><b>G) In what coordinate space did you compute the lighting?</b></li>
+        <p>The lighting was computed in view space, as both the position and normals were transformed using the view and model matrices.</p>
+    </ul>
+
+    <div class="footer">
+        Worksheet for 02561 Computer Graphics at DTU (E24) by Jakob Ketmig
+    </div>
+
+</body>
+</html>
