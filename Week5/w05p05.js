@@ -1,3 +1,4 @@
+var gl, canvas;
 var model, g_drawingInfo;
 var v, p, m, vLoc, pLoc, mLoc;
 // Transforms
@@ -24,8 +25,8 @@ var shininess = 50; // Shininess value
 
 
 window.onload = function init() {
-    var canvas = document.getElementById("gl-canvas");
-    var gl = WebGLUtils.setupWebGL(canvas); 
+    canvas = document.getElementById("gl-canvas");
+    gl = WebGLUtils.setupWebGL(canvas); 
     if (!gl) { 
         alert("WebGL isn't available"); 
     }
