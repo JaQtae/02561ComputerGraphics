@@ -5,10 +5,30 @@
 // - enable loading of files with different white spaces and returns at the end
 //   of the face definitions, and
 // - enable loading of larger models by improving the function getDrawingInfo.
+// Modified by Jeppe Revall Frisvad 2024, in order to
+// - use fetch for asynchronous data loading.
 
 //------------------------------------------------------------------------------
 // OBJParser
 //------------------------------------------------------------------------------
+
+async function readOBJFile(fileName, scale, reverse)
+{
+  const response = await fetch(fileName);
+  if(response.ok)
+  {
+    var objDoc = new OBJDoc(fileName); // Create an OBJDoc object
+    let fileText = await response.text();
+    let result = await objDoc.parse(fileText, scale, reverse);
+    if(!result) {
+      console.log("OBJ file parsing error.");
+      return null;
+    }
+    return objDoc.getDrawingInfo();
+  }
+  else
+    return null;
+}
 
 // OBJDoc object
 // Constructor
@@ -21,7 +41,7 @@ var OBJDoc = function (fileName) {
 }
 
 // Parsing the OBJ file
-OBJDoc.prototype.parse = function (fileString, scale, reverse) {
+OBJDoc.prototype.parse = async function (fileString, scale, reverse) {
   var lines = fileString.split('\n');  // Break up into lines and store them as array
   lines.push(null); // Append null
   var index = 0;    // Initialize index of line
@@ -45,18 +65,13 @@ OBJDoc.prototype.parse = function (fileString, scale, reverse) {
         var path = this.parseMtllib(sp, this.fileName);
         var mtl = new MTLDoc();   // Create MTL instance
         this.mtls.push(mtl);
-        var request = new XMLHttpRequest();
-        request.onreadystatechange = function () {
-          if (request.readyState == 4) {
-            if (request.status != 404) {
-              onReadMTLFile(request.responseText, mtl);
-            } else {
-              mtl.complete = true;
-            }
-          }
+        const response = await fetch(path);
+        if(response.ok) {
+          onReadMTLFile(await response.text(), mtl);
         }
-        request.open('GET', path, true);  // Create a request to acquire the file
-        request.send();                   // Send the request
+        else {
+          mtl.complete = true;
+        }
         continue; // Go to the next line
       case 'o':
       case 'g':   // Read Object name
@@ -221,7 +236,7 @@ function onReadMTLFile(fileString, mtl) {
       case 'newmtl': // Read Material chunk
         name = mtl.parseNewmtl(sp);    // Get name
         continue; // Go to the next line
-      case 'Kd':   // Read normal
+      case 'Kd':   // Read diffuse color coefficient as color
         if (name == "") continue; // Go to the next line because of Error
         var material = mtl.parseRGB(sp, name);
         mtl.materials.push(material);
@@ -246,7 +261,7 @@ OBJDoc.prototype.findColor = function (name) {
   for (var i = 0; i < this.mtls.length; i++) {
     for (var j = 0; j < this.mtls[i].materials.length; j++) {
       if (this.mtls[i].materials[j].name == name) {
-        return (this.mtls[i].materials[j].color)
+        return (this.mtls[i].materials[j].color);
       }
     }
   }
@@ -263,10 +278,10 @@ OBJDoc.prototype.getDrawingInfo = function () {
     numIndices += this.objects[i].numIndices;
   }
   var numVertices = this.vertices.length;
-  var vertices = new Float32Array(numVertices * 3);
-  var normals = new Float32Array(numVertices * 3);
+  var vertices = new Float32Array(numVertices * 4);
+  var normals = new Float32Array(numVertices * 4);
   var colors = new Float32Array(numVertices * 4);
-  var indices = new Uint16Array(numIndices);
+  var indices = new Uint32Array(numIndices);
 
   // Set vertex, normal and color
   var index_indices = 0;
@@ -282,9 +297,10 @@ OBJDoc.prototype.getDrawingInfo = function () {
         indices[index_indices] = vIdx;
         // Copy vertex
         var vertex = this.vertices[vIdx];
-        vertices[vIdx * 3 + 0] = vertex.x;
-        vertices[vIdx * 3 + 1] = vertex.y;
-        vertices[vIdx * 3 + 2] = vertex.z;
+        vertices[vIdx * 4 + 0] = vertex.x;
+        vertices[vIdx * 4 + 1] = vertex.y;
+        vertices[vIdx * 4 + 2] = vertex.z;
+        vertices[vIdx * 4 + 3] = 1.0;
         // Copy color
         colors[vIdx * 4 + 0] = color.r;
         colors[vIdx * 4 + 1] = color.g;
@@ -294,13 +310,15 @@ OBJDoc.prototype.getDrawingInfo = function () {
         var nIdx = face.nIndices[k];
         if (nIdx >= 0) {
           var normal = this.normals[nIdx];
-          normals[vIdx * 3 + 0] = normal.x;
-          normals[vIdx * 3 + 1] = normal.y;
-          normals[vIdx * 3 + 2] = normal.z;
+          normals[vIdx * 4 + 0] = normal.x;
+          normals[vIdx * 4 + 1] = normal.y;
+          normals[vIdx * 4 + 2] = normal.z;
+          normals[vIdx * 4 + 3] = 0.0;
         } else {
-          normals[vIdx * 3 + 0] = faceNormal.x;
-          normals[vIdx * 3 + 1] = faceNormal.y;
-          normals[vIdx * 3 + 2] = faceNormal.z;
+          normals[vIdx * 4 + 0] = faceNormal.x;
+          normals[vIdx * 4 + 1] = faceNormal.y;
+          normals[vIdx * 4 + 2] = faceNormal.z;
+          normals[vIdx * 4 + 3] = 0.0;
         }
         index_indices++;
       }
