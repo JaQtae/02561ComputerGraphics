@@ -9,8 +9,8 @@ const at = vec3(0.0, 0.0, 0.0);
 const up = vec3(0.0, 1.0, 0.0);
 
 const fovy = 45;
-const near = 0.001;
-const far = 50;
+const near = 0.11;
+const far = 25;
 
 var lightPositionLoc, l_iLoc, k_aLoc, k_dLoc, k_sLoc, sLoc;
 var radius = 3; var alpha = 0.0; var orbit = 1;
@@ -35,7 +35,6 @@ window.onload = function init() {
     gl.clearColor(0.3921, 0.5843, 0.9294, 1.0);
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);   // Enable backface culling
-    gl.cullFace(gl.BACK);      // Cull the back faces (default)
     gl.frontFace(gl.CCW);      // Counter-clockwise winding is the front face (default)
     
     gl.program = initShaders(gl, "vertex-shader", "fragment-shader");
