@@ -136,7 +136,10 @@ function draw_object() {
     gl.uniform1f(k_dLoc, k_d);
     gl.uniform1f(k_sLoc, k_s);
     gl.uniform1f(sLoc, shininess);
-  
+    
+    console.log("g_drawingInfo: ", g_drawingInfo);
+    console.log("g_objDoc: ", g_objDoc);
+    console.log("g_objDoc.isMTLComplete(): ", g_objDoc.isMTLComplete());
   
     if (!g_drawingInfo && g_objDoc && g_objDoc.isMTLComplete()) {
       // OBJ and all MTLs are available 
@@ -213,7 +216,7 @@ function onReadOBJFile(fileString, fileName, gl, _obj, scale, reverse) {
         return;
     }
     g_objDoc = objDoc;
-    console.log("OBJ file parsed successfully:", fileName);
+    console.log("OBJ file parsed successfully!");
 }
 
 
