@@ -192,25 +192,28 @@ function readOBJFile(fileName, gl, model, scale, reverse) {
         if (request.readyState === 4 && request.status !== 404) {
             console.log("OBJ file loading complete: ", request.responseText);
         onReadOBJFile(request.responseText, fileName, gl, model, scale, reverse);
+        } else if (request.readyState === 4 && request.status === 404) {
+            console.error("OBJ file not found:", fileName);  // Log if the file can't be found
         }
     }
     request.open('GET', fileName, true); // Create a request to acquire the file
     request.send();                      // Send the request
-    }
+}
 
-    var g_objDoc = null;      // The information of OBJ file
-    var g_drawingInfo = null; // The information for drawing 3D model
+var g_objDoc = null;      // The information of OBJ file
+var g_drawingInfo = null; // The information for drawing 3D model
 
-    // OBJ File has been read
-    function onReadOBJFile(fileString, fileName, gl, _obj, scale, reverse) {
+// OBJ File has been read
+function onReadOBJFile(fileString, fileName, gl, _obj, scale, reverse) {
     var objDoc = new OBJDoc(fileName);  // Create a OBJDoc object
     var result = objDoc.parse(fileString, scale, reverse); // Parse the file
     if (!result) {
+        console.error("OBJ file parsing error.");
         g_objDoc = null; g_drawingInfo = null;
-        console.log("OBJ file parsing error.");
         return;
     }
     g_objDoc = objDoc;
+    console.log("OBJ file parsed successfully:", fileName);
 }
 
 
