@@ -95,7 +95,7 @@ window.onload = function init() {
         return;
     }
 
-    readOBJFile('monkey.obj', gl, model, 1, true);
+    readOBJFile('../Week5/monkey.obj', gl, model, 1, true);
     render();
 
 
