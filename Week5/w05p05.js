@@ -95,7 +95,7 @@ window.onload = function init() {
         return;
     }
 
-    readOBJFile('../Week5/monkey.obj', gl, model, 1, true);
+    readOBJFile('../Week5/monkey.obj', gl, model, 2, true);
 
     // if (g_objDoc && g_objDoc.isMTLComplete()) {
     //     g_drawingInfo = onReadComplete(gl, model, g_objDoc);
@@ -148,9 +148,9 @@ function draw_object() {
         return;
     }
 
-    console.log("g_drawingInfo: ", g_drawingInfo);
-    console.log("g_objDoc: ", g_objDoc);
-    console.log("g_objDoc.isMTLComplete(): ", g_objDoc.isMTLComplete());
+    // console.log("g_drawingInfo: ", g_drawingInfo);
+    // console.log("g_objDoc: ", g_objDoc);
+    // console.log("g_objDoc.isMTLComplete(): ", g_objDoc.isMTLComplete());
   
     gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
   }
