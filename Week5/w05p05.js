@@ -98,9 +98,6 @@ window.onload = function init() {
     readOBJFile('../Week5/monkey.obj', gl, model, 1, true);
     render();
 
-
-
-
     function render() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -153,8 +150,8 @@ function draw_object() {
 // Create an buffer object and perform an initial configuration
 function initVertexBuffers(gl, program) {
     var _obj = new Object(); // Utilize Object object to return multiple buffer objects
-    _obj.vBuffer = createEmptyArrayBuffer(gl, program.vPosition, 4, gl.FLOAT);
-    _obj.nBuffer = createEmptyArrayBuffer(gl, program.vNormal, 4, gl.FLOAT);
+    _obj.vBuffer = createEmptyArrayBuffer(gl, program.vPosition, 3, gl.FLOAT);
+    _obj.nBuffer = createEmptyArrayBuffer(gl, program.vNormal, 3, gl.FLOAT);
     _obj.cBuffer = createEmptyArrayBuffer(gl, program.vColor, 4, gl.FLOAT);
     _obj.idxBuffer = gl.createBuffer();
     if (!_obj.vBuffer || !_obj.nBuffer || !_obj.cBuffer || !_obj.idxBuffer) {
