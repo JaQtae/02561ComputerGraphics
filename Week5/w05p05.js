@@ -97,12 +97,12 @@ window.onload = function init() {
 
     readOBJFile('../Week5/monkey.obj', gl, model, 1, true);
 
-    if (g_objDoc && g_objDoc.isMTLComplete()) {
-        g_drawingInfo = onReadComplete(gl, model, g_objDoc);
-        if (g_drawingInfo) {
-            render();
-        }
-    }
+    // if (g_objDoc && g_objDoc.isMTLComplete()) {
+    //     g_drawingInfo = onReadComplete(gl, model, g_objDoc);
+    //     if (g_drawingInfo) {
+    //         render();
+    //     }
+    // }
 
     render();
 
@@ -137,9 +137,6 @@ function draw_object() {
     gl.uniform1f(k_sLoc, k_s);
     gl.uniform1f(sLoc, shininess);
     
-    console.log("g_drawingInfo: ", g_drawingInfo);
-    console.log("g_objDoc: ", g_objDoc);
-    console.log("g_objDoc.isMTLComplete(): ", g_objDoc.isMTLComplete());
   
     if (!g_drawingInfo && g_objDoc && g_objDoc.isMTLComplete()) {
       // OBJ and all MTLs are available 
