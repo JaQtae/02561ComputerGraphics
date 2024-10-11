@@ -95,24 +95,24 @@ window.onload = function init() {
         return;
     }
 
-    readOBJFile('../Week5/monkey.obj', gl, model, 2, true);
+    readOBJFile('../Week5/monkey.obj', gl, model, 1, true);
+
+    if (g_objDoc && g_objDoc.isMTLComplete()) {
+        g_drawingInfo = onReadComplete(gl, model, g_objDoc);
+        if (g_drawingInfo) {
+            render();
+        }
+    }
+
     render();
 
     function render() {
-        if (g_drawingInfo) {
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    
-            draw_object();  // Render the object
-    
-            // Continue the animation
-            requestAnimationFrame(render);
-        } else {
-            // The drawing info is not ready, continue checking
-            console.log("Waiting for OBJ to load...");
-            requestAnimationFrame(render);
-        }
-    }
-};
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        draw_object();
+
+        requestAnimationFrame(render);
+    };
+}
 
 function draw_object() {
     if (orbit == 1) {
