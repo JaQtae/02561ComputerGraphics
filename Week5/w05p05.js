@@ -8,9 +8,9 @@ const R = mat4(); // Identity matrix
 const at = vec3(0.0, 0.0, 0.0);
 const up = vec3(0.0, 1.0, 0.0);
 
-const fovy = 90;
-const near = 0.001;
-const far = 50;
+const fovy = 45;
+const near = 0.1;
+const far = 25;
 
 var lightPositionLoc, l_iLoc, k_aLoc, k_dLoc, k_sLoc, sLoc;
 var radius = 3; var alpha = 0.0; var orbit = 1;
@@ -95,7 +95,7 @@ window.onload = function init() {
         return;
     }
 
-    readOBJFile('../Week5/monkey.obj', gl, model, 1, true);
+    readOBJFile('../Week5/monkey.obj', gl, model, 2, true);
     render();
 
     function render() {
