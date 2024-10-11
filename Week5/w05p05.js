@@ -9,8 +9,8 @@ const at = vec3(0.0, 0.0, 0.0);
 const up = vec3(0.0, 1.0, 0.0);
 
 const fovy = 45;
-const near = 0.1;
-const far = 25;
+const near = 0.01;
+const far = 50;
 
 var lightPositionLoc, l_iLoc, k_aLoc, k_dLoc, k_sLoc, sLoc;
 var radius = 3; var alpha = 0.0; var orbit = 1;
