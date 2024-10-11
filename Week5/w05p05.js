@@ -99,11 +99,18 @@ window.onload = function init() {
     render();
 
     function render() {
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        draw_object();
+        if (g_drawingInfo) {
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
-        requestAnimationFrame(render);
+            draw_object();  // Render the object
+    
+            // Continue the animation
+            requestAnimationFrame(render);
+        } else {
+            // The drawing info is not ready, continue checking
+            console.log("Waiting for OBJ to load...");
+            requestAnimationFrame(render);
+        }
     }
 };
 
@@ -210,6 +217,11 @@ function readOBJFile(fileName, gl, model, scale, reverse) {
 function onReadComplete(gl, model, objDoc) {
     // Acquire the vertex coordinates and colors from OBJ file
     var drawingInfo = objDoc.getDrawingInfo();
+
+    if (!drawingInfo) {
+        console.log('Failed to get drawing info.');
+        return null;
+    }
 
     // Write date into the buffer object
     gl.bindBuffer(gl.ARRAY_BUFFER, model.vBuffer);
