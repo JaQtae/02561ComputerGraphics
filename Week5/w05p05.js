@@ -136,9 +136,13 @@ function draw_object() {
   
     if (!g_drawingInfo && g_objDoc && g_objDoc.isMTLComplete()) {
       // OBJ and all MTLs are available 
+      console.log("OBJ loaded and materials complete!");
       g_drawingInfo = onReadComplete(gl, model, g_objDoc);
     }
-    if (!g_drawingInfo) return;
+    if (!g_drawingInfo) {
+        console.log("Drawing info not ready");
+        return;
+    }
   
     gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
   }
@@ -182,6 +186,7 @@ function readOBJFile(fileName, gl, model, scale, reverse) {
 
     request.onreadystatechange = function () {
         if (request.readyState === 4 && request.status !== 404) {
+            console.log("OBJ file loading complete: ", request.responseText);
         onReadOBJFile(request.responseText, fileName, gl, model, scale, reverse);
         }
     }
