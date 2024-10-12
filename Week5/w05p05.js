@@ -96,13 +96,6 @@ window.onload = function init() {
 
     readOBJFile('../Week5/monkey.obj', 1.0, true);
 
-    // if (g_objDoc && g_objDoc.isMTLComplete()) {
-    //     g_drawingInfo = onReadComplete(gl, model, g_objDoc);
-    //     if (g_drawingInfo) {
-    //         render();
-    //     }
-    // }
-
     render();
 
     function render() {
@@ -146,10 +139,6 @@ function draw_object() {
         console.log("Drawing info not ready");
         return;
     }
-
-    // console.log("g_drawingInfo: ", g_drawingInfo);
-    // console.log("g_objDoc: ", g_objDoc);
-    // console.log("g_objDoc.isMTLComplete(): ", g_objDoc.isMTLComplete());
   
     gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
   }
@@ -203,6 +192,7 @@ async function readOBJFile(fileName, scale, reverse)
     return objDoc.getDrawingInfo();
   }
   else
+  console.log("Response not OK");
     return null;
 }
 
@@ -210,7 +200,7 @@ var g_objDoc = null;      // The information of OBJ file
 var g_drawingInfo = null; // The information for drawing 3D model
 
 // OBJ File has been read
-function onReadOBJFile(fileString, fileName, gl, _obj, scale, reverse) {
+function onReadOBJFile(fileString, fileName, _obj, scale, reverse) {
     var objDoc = new OBJDoc(fileName);  // Create a OBJDoc object
     var result = objDoc.parse(fileString, scale, reverse); // Parse the file
     if (!result) {
