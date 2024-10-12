@@ -94,8 +94,13 @@ window.onload = function init() {
         return;
     }
 
-    readOBJFile('../Week5/monkey.obj', 1.0, true);
-
+    console.log("Loading OBJ file...")
+    g_drawingInfo = await readOBJFile('../Week5/monkey.obj', 1.0, true);
+    if (!g_drawingInfo) {
+        console.log('Failed to read OBJ file');
+        return;
+    }
+    console.log("Starting rendering...")
     render();
 
     function render() {
@@ -130,15 +135,15 @@ function draw_object() {
     gl.uniform1f(sLoc, shininess);
     
   
-    if (!g_drawingInfo && g_objDoc && g_objDoc.isMTLComplete()) {
-      // OBJ and all MTLs are available 
-      console.log("OBJ loaded and materials complete!");
-      g_drawingInfo = onReadComplete(gl, model, g_objDoc);
-    }
-    if (!g_drawingInfo) {
-        console.log("Drawing info not ready");
-        return;
-    }
+    // if (!g_drawingInfo && g_objDoc && g_objDoc.isMTLComplete()) {
+    //   // OBJ and all MTLs are available 
+    //   console.log("OBJ loaded and materials complete!");
+    //   g_drawingInfo = onReadComplete(gl, model, g_objDoc);
+    // }
+    // if (!g_drawingInfo) {
+    //     console.log("Drawing info not ready");
+    //     return;
+    // }
   
     gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
   }
