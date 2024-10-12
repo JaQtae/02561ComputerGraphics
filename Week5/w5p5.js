@@ -93,7 +93,7 @@ window.onload = function init() {
     sLoc = gl.getUniformLocation(gl.program, 's')
 
   // reading OBJ
-  readOBJFile('monkey.obj', gl, model, 0.5, true);
+  readOBJFile('monkey.obj', 0.5, true);
 
   // Render the object.
   render();
