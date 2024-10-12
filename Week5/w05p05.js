@@ -134,6 +134,7 @@ function draw_object() {
     gl.uniform1f(k_sLoc, k_s);
     gl.uniform1f(sLoc, shininess);
     
+    console.log("Checking drawing info...")
   
     if (!g_drawingInfo && g_objDoc && g_objDoc.isMTLComplete()) {
       // OBJ and all MTLs are available 
@@ -144,6 +145,16 @@ function draw_object() {
         console.log("Drawing info not ready");
         return;
     }
+
+    console.log("Before drawing...");
+    console.log("Bound element buffer:", gl.getParameter(gl.ELEMENT_ARRAY_BUFFER_BINDING));
+    console.log("Bound vertex buffer:", gl.getParameter(gl.ARRAY_BUFFER_BINDING));
+
+    if (!g_drawingInfo.indices || g_drawingInfo.indices.length == 0) {
+        console.log("Index buffer empty or populated incorrectly");
+        return;
+    }
+
   
     gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
   }
