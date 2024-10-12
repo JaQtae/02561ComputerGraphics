@@ -94,7 +94,7 @@ window.onload = function init() {
         return;
     }
 
-    readOBJFile('../Week5/monkey.obj', gl, model, 0.5, true);
+    readOBJFile('../Week5/monkey.obj', 1.0, true);
 
     // if (g_objDoc && g_objDoc.isMTLComplete()) {
     //     g_drawingInfo = onReadComplete(gl, model, g_objDoc);
