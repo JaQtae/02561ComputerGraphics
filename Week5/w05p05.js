@@ -24,7 +24,7 @@ var k_s = 0.5; // Specular reflection coefficient
 var shininess = 50; // Shininess value
 
 
-window.onload = async function init() {
+window.onload = function init() {
     canvas = document.getElementById("gl-canvas");
     gl = WebGLUtils.setupWebGL(canvas); 
     if (!gl) { 
@@ -35,7 +35,7 @@ window.onload = async function init() {
     gl.clearColor(0.3921, 0.5843, 0.9294, 1.0);
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);   // Enable backface culling
-    // gl.frontFace(gl.CCW);      // Counter-clockwise winding is the front face (default)
+    gl.frontFace(gl.CCW);      // Counter-clockwise winding is the front face (default)
     
     gl.program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(gl.program);
@@ -94,13 +94,15 @@ window.onload = async function init() {
         return;
     }
 
-    console.log("Loading OBJ file...")
-    g_drawingInfo = await readOBJFile('../Week5/monkey.obj', 1.0, true);
-    if (!g_drawingInfo) {
-        console.error('Failed to read OBJ file');
-        return;
-    }
-    console.log("Starting rendering...")
+    readOBJFile('../Week5/monkey.obj', gl, model, 0.5, true);
+
+    // if (g_objDoc && g_objDoc.isMTLComplete()) {
+    //     g_drawingInfo = onReadComplete(gl, model, g_objDoc);
+    //     if (g_drawingInfo) {
+    //         render();
+    //     }
+    // }
+
     render();
 
     function render() {
@@ -134,7 +136,6 @@ function draw_object() {
     gl.uniform1f(k_sLoc, k_s);
     gl.uniform1f(sLoc, shininess);
     
-    console.log("Checking drawing info...")
   
     if (!g_drawingInfo && g_objDoc && g_objDoc.isMTLComplete()) {
       // OBJ and all MTLs are available 
@@ -146,18 +147,9 @@ function draw_object() {
         return;
     }
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, model.vBuffer);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.idxBuffer);
-
-    console.log("Before drawing...");
-    console.log("Bound element buffer:", gl.getParameter(gl.ELEMENT_ARRAY_BUFFER_BINDING)); // null rn...
-    console.log("Bound vertex buffer:", gl.getParameter(gl.ARRAY_BUFFER_BINDING)); // null too?
-
-    if (!g_drawingInfo.indices || g_drawingInfo.indices.length == 0) {
-        console.log("Index buffer empty or populated incorrectly");
-        return;
-    }
-
+    // console.log("g_drawingInfo: ", g_drawingInfo);
+    // console.log("g_objDoc: ", g_objDoc);
+    // console.log("g_objDoc.isMTLComplete(): ", g_objDoc.isMTLComplete());
   
     gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
   }
@@ -173,7 +165,6 @@ function initVertexBuffers(gl, program) {
     _obj.cBuffer = createEmptyArrayBuffer(gl, program.vColor, 4, gl.FLOAT);
     _obj.idxBuffer = gl.createBuffer();
     if (!_obj.vBuffer || !_obj.nBuffer || !_obj.cBuffer || !_obj.idxBuffer) {
-        console.error("Failed to create buffers!");
          return null; 
     }
   
@@ -197,22 +188,19 @@ function createEmptyArrayBuffer(gl, a_attribute, num, type) {
 }
 
 // Read .obj file
-async function readOBJFile(fileName, scale, reverse)
-{
-  const response = await fetch(fileName);
-  if(response.ok)
-  {
-    var objDoc = new OBJDoc(fileName); // Create an OBJDoc object
-    let fileText = await response.text();
-    let result = await objDoc.parse(fileText, scale, reverse);
-    if(!result) {
-      console.error("OBJ file parsing error.");
-      return null;
+function readOBJFile(fileName, gl, model, scale, reverse) {
+    var request = new XMLHttpRequest();
+
+    request.onreadystatechange = function () {
+        if (request.readyState === 4 && request.status !== 404) {
+            console.log("OBJ file loading complete: ", request.responseText);
+        onReadOBJFile(request.responseText, fileName, gl, model, scale, reverse);
+        } else if (request.readyState === 4 && request.status === 404) {
+            console.error("OBJ file not found:", fileName);  // Log if the file can't be found
+        }
     }
-    return objDoc.getDrawingInfo();
-  }
-  else 
-    return null;
+    request.open('GET', fileName, true); // Create a request to acquire the file
+    request.send();                      // Send the request
 }
 
 var g_objDoc = null;      // The information of OBJ file
@@ -254,11 +242,6 @@ function onReadComplete(gl, model, objDoc) {
     // Write the indices to the buffer object
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.idxBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, drawingInfo.indices, gl.STATIC_DRAW);
-
-    console.log("Indices:", drawingInfo.indices.length);
-    console.log("Vertices:", drawingInfo.vertices.length);
-    console.log("Normals:", drawingInfo.normals.length);
-    console.log("Colors:", drawingInfo.colors.length);
 
     return drawingInfo;
 }
