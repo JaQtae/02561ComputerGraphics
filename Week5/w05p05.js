@@ -188,19 +188,22 @@ function createEmptyArrayBuffer(gl, a_attribute, num, type) {
 }
 
 // Read .obj file
-function readOBJFile(fileName, gl, model, scale, reverse) {
-    var request = new XMLHttpRequest();
-
-    request.onreadystatechange = function () {
-        if (request.readyState === 4 && request.status !== 404) {
-            console.log("OBJ file loading complete: ", request.responseText);
-        onReadOBJFile(request.responseText, fileName, gl, model, scale, reverse);
-        } else if (request.readyState === 4 && request.status === 404) {
-            console.error("OBJ file not found:", fileName);  // Log if the file can't be found
-        }
+async function readOBJFile(fileName, scale, reverse)
+{
+  const response = await fetch(fileName);
+  if(response.ok)
+  {
+    var objDoc = new OBJDoc(fileName); // Create an OBJDoc object
+    let fileText = await response.text();
+    let result = await objDoc.parse(fileText, scale, reverse);
+    if(!result) {
+      console.log("OBJ file parsing error.");
+      return null;
     }
-    request.open('GET', fileName, true); // Create a request to acquire the file
-    request.send();                      // Send the request
+    return objDoc.getDrawingInfo();
+  }
+  else
+    return null;
 }
 
 var g_objDoc = null;      // The information of OBJ file
