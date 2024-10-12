@@ -146,9 +146,12 @@ function draw_object() {
         return;
     }
 
+    gl.bindBuffer(gl.ARRAY_BUFFER, model.vBuffer);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.idxBuffer);
+
     console.log("Before drawing...");
-    console.log("Bound element buffer:", gl.getParameter(gl.ELEMENT_ARRAY_BUFFER_BINDING));
-    console.log("Bound vertex buffer:", gl.getParameter(gl.ARRAY_BUFFER_BINDING));
+    console.log("Bound element buffer:", gl.getParameter(gl.ELEMENT_ARRAY_BUFFER_BINDING)); // null rn...
+    console.log("Bound vertex buffer:", gl.getParameter(gl.ARRAY_BUFFER_BINDING)); // null too?
 
     if (!g_drawingInfo.indices || g_drawingInfo.indices.length == 0) {
         console.log("Index buffer empty or populated incorrectly");
