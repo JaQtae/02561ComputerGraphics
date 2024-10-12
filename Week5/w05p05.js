@@ -206,13 +206,12 @@ async function readOBJFile(fileName, scale, reverse)
     let fileText = await response.text();
     let result = await objDoc.parse(fileText, scale, reverse);
     if(!result) {
-      console.log("OBJ file parsing error.");
+      console.error("OBJ file parsing error.");
       return null;
     }
     return objDoc.getDrawingInfo();
   }
-  else
-  console.log("Response not OK");
+  else 
     return null;
 }
 
@@ -255,6 +254,11 @@ function onReadComplete(gl, model, objDoc) {
     // Write the indices to the buffer object
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.idxBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, drawingInfo.indices, gl.STATIC_DRAW);
+
+    console.log("Indices:", drawingInfo.indices.length);
+    console.log("Vertices:", drawingInfo.vertices.length);
+    console.log("Normals:", drawingInfo.normals.length);
+    console.log("Colors:", drawingInfo.colors.length);
 
     return drawingInfo;
 }
