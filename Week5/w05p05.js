@@ -9,7 +9,7 @@ const at = vec3(0.0, 0.0, 0.0);
 const up = vec3(0.0, 1.0, 0.0);
 
 const fovy = 45;
-const near = 0.11;
+const near = 0.01;
 const far = 25;
 
 var lightPositionLoc, l_iLoc, k_aLoc, k_dLoc, k_sLoc, sLoc;
@@ -94,7 +94,7 @@ window.onload = function init() {
         return;
     }
 
-    readOBJFile('../Week5/monkey.obj', gl, model, 0.5, true);
+    readOBJFile('monkey.obj', gl, model, 0.5, true);
 
     // if (g_objDoc && g_objDoc.isMTLComplete()) {
     //     g_drawingInfo = onReadComplete(gl, model, g_objDoc);
