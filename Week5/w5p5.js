@@ -1,30 +1,45 @@
 var gl, canvas;
+var orbit = 1;
+var alpha = 0.0;
+var aspect;
+var lightPosLoc, liLoc, kaLoc, kdLoc, sLoc, eyeLoc;
+
+var V, vLoc, pLoc, P, M, mLoc, T, R;
+var radius = 1.5;
 var model, g_drawingInfo;
-var v, p, m, vLoc, pLoc, mLoc;
-// Transforms
-const T = translate(0.0, 0.0, 0.0);
-const R = mat4(); // Identity matrix
-// LookAt()
-const at = vec3(0.0, 0.0, 0.0);
-const up = vec3(0.0, 1.0, 0.0);
 
-const fovy = 45;
-const near = 0.11;
-const far = 25;
+// Constants for projectionMatrix
+var fovy = 90; // angle: 
+var near = 0.001; // near
+var far = 50; // far
 
-var lightPositionLoc, l_iLoc, k_aLoc, k_dLoc, k_sLoc, sLoc;
-var radius = 3; var alpha = 0.0; var orbit = 1;
-var L_e = vec3(1.0, 1.0, 1.0); // Light emission = incident light (L_i) (if V = 1 as visibility(V) * L_e)
+// at and up vectors for LookAt
+var at = vec3(0.0, 0.0, 0.0);
+var up = vec3(0.0, 1.0, 0.0);
+
+// lighting stuff
+// k_d (k_diffuse) --> might have to be the color
+// var materialDiffuse = vec4(1.0, 0.8, 0.0, 1.0);
+var L_e = vec3(1.0, 1.0, 1.0);
 var L_i = L_e;
-var l_dir = vec3(0.0, 0.0, -1.0); // Direction of light source
-var lightPosition = vec4(0.0, 0.0, 1.0, 0.0); // Oppossite light direction
-var k_a = 0.5; // Ambient reflection coefficient
-var k_d = 0.5; // Diffuse reflection coefficient
-var k_s = 0.5; // Specular reflection coefficient
-var shininess = 50; // Shininess value
+
+// ambient coefficient
+var k_a = 0.1;
+
+// diffuse reflection coefficient
+var k_d = 0.9;
+
+// specular coefficient
+var k_s = 0.5;
+
+// shininess
+var s = 50;
+
+// we want direrctional light, i.e. lightpos.w = 0
+var lightPos = vec4(0.0, 0.0, 1.0, 1.0); // opposite the light direction.
 
 window.onload = function init() {
-  canvas = document.getElementById("gl-canvas");
+  canvas = document.getElementById("c");
   gl = WebGLUtils.setupWebGL(canvas);
   if (!gl) { alert("WebGL isn't available"); }
 
@@ -39,6 +54,25 @@ window.onload = function init() {
   gl.useProgram(gl.program);
   gl.vBuffer = null;
 
+  // coupling attributes to shaders
+  gl.program.a_Position = gl.getAttribLocation(gl.program, 'vPosition');
+  gl.program.a_Normal = gl.getAttribLocation(gl.program, 'vNormals');
+  gl.program.a_Color = gl.getAttribLocation(gl.program, 'color');
+  // gl.program.u_NormalMatrix = gl.getUniformLocation(gl.program, 'u_NormalMatrix');
+
+  // world matrices
+  vLoc = gl.getUniformLocation(gl.program, 'viewMatrix');
+  pLoc = gl.getUniformLocation(gl.program, 'projectionMatrix');
+  mLoc = gl.getUniformLocation(gl.program, 'modelMatrix');
+
+  lightPosLoc = gl.getUniformLocation(gl.program, "lightPos");
+  liLoc = gl.getUniformLocation(gl.program, "L_i");
+  kaLoc = gl.getUniformLocation(gl.program, "k_a");
+  kdLoc = gl.getUniformLocation(gl.program, "k_d");
+  ksLoc = gl.getUniformLocation(gl.program, "k_s");
+  sLoc = gl.getUniformLocation(gl.program, "s");
+  eyeLoc = gl.getUniformLocation(gl.program, "eye");
+
   // initializing buffers
   model = initVertexBuffers(gl, gl.program);
   if (!model) {
@@ -46,59 +80,40 @@ window.onload = function init() {
     return;
   }
 
-    // Slider Interactivity
-    document.getElementById("L_e").oninput = function() {
-        L_e = vec3(parseFloat(this.value), parseFloat(this.value), parseFloat(this.value));
-        L_i = L_e;
-        document.getElementById("L_e_val").innerHTML = this.value;
-    };
+  // sliders
+  var Le_slider = document.getElementById("L_e");
+  Le_slider.oninput = function () {
+    L_e = vec3(this.value, this.value, this.value);
+    L_i = L_e;
+  }
 
-    document.getElementById("K_a").oninput = function() {
-        k_a = parseFloat(this.value);
-        document.getElementById("K_a_val").innerHTML = this.value;
-    };
+  var Ka_slider = document.getElementById("K_a");
+  Ka_slider.oninput = function () {
+    k_a = this.value;
+  }
 
-    document.getElementById("K_d").oninput = function() {
-        k_d = parseFloat(this.value);
-        document.getElementById("K_d_val").innerHTML = this.value;
-    };
+  var Kd_slider = document.getElementById("K_d");
+  Kd_slider.oninput = function () {
+    k_d = this.value;
+  }
 
-    document.getElementById("K_s").oninput = function() {
-        k_s = parseFloat(this.value);
-        document.getElementById("K_s_val").innerHTML = this.value;
-    };
+  var Ks_slider = document.getElementById("K_s");
+  Ks_slider.oninput = function () {
+    k_s = this.value;
+  }
 
-    document.getElementById("s").oninput = function() {
-        shininess = parseFloat(this.value);
-        document.getElementById("s_val").innerHTML = this.value;
-    };
-
-    // Couple attributes with the shaders
-    gl.program.vPosition = gl.getAttribLocation(gl.program, 'vPosition');
-    gl.program.vNormal = gl.getAttribLocation(gl.program, 'vNormal');
-    gl.program.vColor = gl.getAttribLocation(gl.program, 'vColor');
-    
-
-    // View Matrix location
-    vLoc = gl.getUniformLocation(gl.program, 'viewMatrix')
-    pLoc = gl.getUniformLocation(gl.program, 'projectionMatrix');
-    mLoc = gl.getUniformLocation(gl.program, 'modelMatrix');
-
-    // Gourad shading parameters
-    lightPositionLoc = gl.getUniformLocation(gl.program, 'lightPosition')
-    l_iLoc = gl.getUniformLocation(gl.program, 'L_i')
-    k_aLoc = gl.getUniformLocation(gl.program, 'k_a')
-    k_dLoc = gl.getUniformLocation(gl.program, 'k_d')
-    k_sLoc = gl.getUniformLocation(gl.program, 'k_s')
-    sLoc = gl.getUniformLocation(gl.program, 's')
+  var s_slider = document.getElementById("s");
+  s_slider.oninput = function () {
+    s = this.value;
+  }
 
   // reading OBJ
-  readOBJFile('monkey.obj', 0.5, true);
+  readOBJFile('monkey.obj', gl, model, 0.5, true);
 
   // Render the object.
   render();
 
-  console.log("rendered");
+  console.log("hello");
 
   function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -120,22 +135,27 @@ function draw_object() {
   var eye = vec3(radius * Math.sin(alpha), 0, radius * Math.cos(alpha));
 
   // view matrix
-  v = lookAt(eye, at, up);
+  V = lookAt(eye, at, up);
 
   // prrojection matrix
   aspect = canvas.width / canvas.height;
-  p = perspective(fovy, aspect, near, far);
+  P = perspective(fovy, aspect, near, far);
+
+  // model matrix -- translation and rotation
+  T = translate(0.0, 0.0, 0.0);
+  R = mat4(); // rotate(60, [0,1,0]);
 
   // sending information to buffer
-  gl.uniformMatrix4fv(vLoc, false, flatten(v));
-  gl.uniformMatrix4fv(pLoc, false, flatten(p));
+  gl.uniformMatrix4fv(vLoc, false, flatten(V));
+  gl.uniformMatrix4fv(pLoc, false, flatten(P));
   gl.uniformMatrix4fv(mLoc, false, flatten(mult(T, R)));
 
-  gl.uniform4fv(lightPositionLoc, lightPosition);
-  gl.uniform3fv(l_iLoc, L_i);
-  gl.uniform1f(k_aLoc, k_a);
-  gl.uniform1f(k_dLoc, k_d);
-  gl.uniform1f(k_sLoc, k_s);
+  gl.uniform4fv(lightPosLoc, lightPos);
+  gl.uniform3fv(liLoc, L_i);
+  gl.uniform3fv(eyeLoc, eye)
+  gl.uniform1f(kaLoc, k_a);
+  gl.uniform1f(kdLoc, k_d);
+  gl.uniform1f(ksLoc, k_s);
   gl.uniform1f(sLoc, s);
 
   if (!g_drawingInfo && g_objDoc && g_objDoc.isMTLComplete()) {
@@ -179,22 +199,16 @@ function createEmptyArrayBuffer(gl, a_attribute, num, type) {
 }
 
 // Read a file
-async function readOBJFile(fileName, scale, reverse)
-{
-  const response = await fetch(fileName);
-  if(response.ok)
-  {
-    var objDoc = new OBJDoc(fileName); // Create an OBJDoc object
-    let fileText = await response.text();
-    let result = await objDoc.parse(fileText, scale, reverse);
-    if(!result) {
-      console.error("OBJ file parsing error.");
-      return null;
+function readOBJFile(fileName, gl, model, scale, reverse) {
+  var request = new XMLHttpRequest();
+
+  request.onreadystatechange = function () {
+    if (request.readyState === 4 && request.status !== 404) {
+      onReadOBJFile(request.responseText, fileName, gl, model, scale, reverse);
     }
-    return objDoc.getDrawingInfo();
   }
-  else 
-    return null;
+  request.open('GET', fileName, true); // Create a request to acquire the file
+  request.send();                      // Send the request
 }
 
 var g_objDoc = null;      // The information of OBJ file

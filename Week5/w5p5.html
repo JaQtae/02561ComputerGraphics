@@ -1,173 +1,106 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workseet 5.4</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-            background-color: #f7f7f7;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-        }
-        h1 {
-            color: #333;
-            margin-top: 20px;
-            font-size: 24px;
-        }
-        canvas {
-            display: block;
-            margin: 20px auto;
-            border: 2px solid #333;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-        }
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        select {
-            padding: 5px;
-            margin-top: 10px;
-            font-size: 16px;
-            width: 150px;
-            height: auto;
-            cursor: pointer;
-        }
-        .footer {
-            margin-top: auto;
-            font-size: 14px;
-            color: #777;
-        }
-    </style>
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-</head>
-<body>
-    <h1>Phong model on .obj (Week 5 Part 4)</h1>
+  <form action="/~s184984/Worksheet5.html">
+    <button class="btn btn-primary btn-lg">Go back</button>
+  </form>
+  <br>
+  <h1>Worksheet 5 - Part 3</h1>
+  <title>W05P3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <canvas id="gl-canvas" width="512" height="512"></canvas>
-
+<script id="vertex-shader" type="x-shader/x-vertex">
+  precision mediump float;  
     
-    <div class="controls">
-        <div class="control-group">
-            <label> Emitted radiance \(L_e\):</label>
-            <input id="L_e" type="range" min="0" max="2" step="0.1" value="1" oninput="updateValue('L_e_val', this.value)" />
-            <span class="value" id="L_e_val">1</span>
-        </div>
+  attribute vec3 vPosition;
+  attribute vec4 color;
+  attribute vec3 vNormals;
+  varying vec4 fColor;
 
-        <div class="control-group">
-            <label> Ambient coeff. \(k_a\):</label>
-            <input id="K_a" type="range" min="0" max="1" step="0.05" value="0.1" oninput="updateValue('K_a_val', this.value)" />
-            <span class="value" id="K_a_val">0.1</span>
-        </div>
+  varying vec3 L_rd;
+  varying vec3 L_rs;
+  varying vec3 L_ra;
+  varying vec3 L_o;
 
-        <div class="control-group">
-            <label> Diffuse coeff. \(k_d\):</label>
-            <input id="K_d" type="range" min="0" max="1" step="0.05" value="0.5" oninput="updateValue('K_d_val', this.value)" />
-            <span class="value" id="K_d_val">1.0</span>
-        </div>
+  uniform mat4 viewMatrix;
+  uniform mat4 projectionMatrix;
+  uniform mat4 modelMatrix;
 
-        <div class="control-group">
-            <label> Specular coeff. \(k_s\):</label>
-            <input id="K_s" type="range" min="0" max="1" step="0.05" value="0.5" oninput="updateValue('K_s_val', this.value)" />
-            <span class="value" id="K_s_val">0.5</span>
-        </div>
+  uniform vec4 lightPos;
+  uniform vec3 L_i;
+  uniform vec3 eye;
+  uniform float k_a;
+  uniform float k_d;
+  uniform float k_s;
+  uniform float s;
 
-        <div class="control-group">
-            <label> Shininess \(s\):</label>
-            <input id="s" type="range" min="1" max="100" step="1" value="20" oninput="updateValue('s_val', this.value)" />
-            <span class="value" id="s_val">50</span>
-        </div>
-    </div>
+    void main() {
+      vec4 pos = modelMatrix * viewMatrix * vec4(vPosition, 1.0); 
+      vec4 normals = modelMatrix * viewMatrix * vec4(vNormals, 1.0);
 
+      vec3 light = (viewMatrix * lightPos).xyz;
+      vec3 w_i = lightPos.w == 0.0 ? normalize(light) : normalize(light - pos.xyz);
 
-    <div class="footer">
-        Worksheet for 02561 Computer Graphics at DTU (E24) by Jakob Ketmig
-    </div>
+      vec3 w_r = 2.0 * dot(w_i, normalize(normals.xyz)) * normalize(normals.xyz) - w_i;
 
-    <script id="vertex-shader" type="x-shader/x-vertex">
-        precision mediump float;
+      vec3 w_o = -normalize((viewMatrix * pos).xyz); 
 
-        attribute vec4 vPosition;
-        attribute vec4 vColor;
-        attribute vec4 vNormal;
+      L_rd = k_d * L_i * max(dot(normals.xyz, w_i), 0.0) * color.xyz; 
+      L_rs = k_s * L_i * pow(max(dot(w_r, w_o), 0.0), s);
+      L_ra = k_a * L_i; 
+      
+      L_o = L_rd + L_rs + L_ra;
+      fColor = vec4(L_o, 1.0);
+      
+      gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(vPosition, 1.0); // projectionMatrix * viewMatrix not working
+      gl_PointSize = 20.0;
+    }
+    
+</script>
 
-        uniform mat4 viewMatrix;
-        uniform mat4 projectionMatrix;
-        uniform mat4 modelMatrix;
+<!--
+  medium precision, 
+  its the amount of precision used when calculating floats
+-->
 
-        varying vec4 fColor;
-        varying vec3 L_rd; // Lambertian Reflection (Diffuse)
-        varying vec3 L_rs; // Phong Reflection (Specular)
-        varying vec3 L_ra; // Ambient Reflection
-        varying vec3 L_o; // Total reflected light
+<script id="fragment-shader" type="x-shader/x-fragment">
 
-        uniform vec4 lightPosition;
-        uniform vec3 L_i; // Incident light
-        uniform float k_a; // Ambient reflection coefficient
-        uniform float k_d; // Diffuse reflection coefficient
-        uniform float k_s; // Specular reflection coefficient
-        uniform float s; // Shininess coefficient
+  precision mediump float;
+  varying vec4 fColor;
 
-        
+    void main() {
+      gl_FragColor = fColor;
+    }
+</script>
 
-        void main() {
-            gl_PointSize = 20.0;
-            gl_Position = projectionMatrix * viewMatrix * modelMatrix * vPosition;
+<script type="text/javascript" src="../Common/webgl-utils.js"></script>
+<script type="text/javascript" src="../Common/initShaders.js"></script>
+<script type="text/javascript" src="../Common/MV.js"></script>
+<script type="text/javascript" src="../Common/OBJParser.js"></script>
+<script type="text/javascript" src="w5p5.js"></script>
+</head>
 
-            vec4 normal = (modelMatrix * viewMatrix * vNormal);
-            vec4 pos = (modelMatrix * viewMatrix * vPosition);
+<body>
+  <canvas id="c" width="512" height="512">
+  </canvas>
+</body><br>
 
-            vec3 L = (viewMatrix * lightPosition).xyz; // light
+<label> Emitted radiance (L_e): &emsp;&emsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&emsp;&emsp; 0.0 <input id="L_e" type="range" min="0" max="2" step="0.1" value="1" />
+  2.0 </label> <br>
+  
+  <label> Ambient coefficient (K_a): &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; 0.0 <input id="K_a" type="range" min="0" max="1" step="0.05" value="0.1" />
+    1.0 </label><br>
+  
+  <label> Diffuse coefficient (K_d): &emsp;&emsp;&emsp;&ensp;&emsp;&emsp;&emsp;&emsp; 0.0 <input id="K_d" type="range" min="0" max="1" step="0.05" value="0.9" />
+  1.0 </label><br>
+  
+  <label> Specular coefficient (K_s): &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; 0.0 <input id="K_s" type="range" min="0" max="1" step="0.05" value="0.5" />
+    1.0 </label><br>
+      
+  <label> Shininess (s):&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;&emsp;&emsp;&emsp;&emsp; 1.0 <input id="s" type="range" min="1" max="1000" step="5" value="50" />
+    1000 </label><br>
+  </div>
 
-            // Directions
-            vec3 w_i = lightPosition.w == 0.0 ? normalize(L) : normalize(L - pos.xyz); // Incoming light 
-            vec3 w_o = - normalize((viewMatrix * pos).xyz); // Viewing direction (surface to eye)
-            vec3 w_r = 2.0 * dot(w_i, normalize(normal.xyz)) * normalize(normal.xyz) - w_i; // Reflected light
-
-            // For this part L_a = L_d = L_s = L_e, so L_i will be used
-
-            L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * vColor.xyz;
-            // Final float(-) part fixes some issues, as two surfaces "light up" when they should not
-            L_rs = k_s * L_i * pow(max(dot(w_r, w_o), 0.0), s);
-            L_ra = k_a * L_i;
-
-            L_o = L_rd + L_rs + L_ra;
-
-            fColor = vec4(L_o, 1.0); 
-        }
-        
-
-        </script>
-        
-        <script id="fragment-shader" type="x-shader/x-fragment">
-        precision mediump float;
-        varying vec4 fColor;
-        
-        void main() {
-            gl_FragColor = fColor; // Inherit from vertex shader
-        }
-        </script>
-        
-        <script src="../common/webgl-utils.js"></script>
-        <script src="../common/initShaders.js"></script>
-        <script src="../common/OBJParser.js"></script>
-        <script src="../common/MV.js"></script>
-        <script src="../common/webgl-debug.js"></script>
-        <script src="w5p5.js"></script>
-
-        <!-- <script src="../Week5/monkey.obj"></script> -->
-</body>
+<!--this is a comment-->
 </html>
+
