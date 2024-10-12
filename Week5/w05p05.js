@@ -96,13 +96,6 @@ window.onload = function init() {
 
     readOBJFile('monkey.obj', gl, model, 0.5, true);
 
-    // if (g_objDoc && g_objDoc.isMTLComplete()) {
-    //     g_drawingInfo = onReadComplete(gl, model, g_objDoc);
-    //     if (g_drawingInfo) {
-    //         render();
-    //     }
-    // }
-
     render();
 
     function render() {
@@ -146,10 +139,6 @@ function draw_object() {
         console.log("Drawing info not ready");
         return;
     }
-
-    // console.log("g_drawingInfo: ", g_drawingInfo);
-    // console.log("g_objDoc: ", g_objDoc);
-    // console.log("g_objDoc.isMTLComplete(): ", g_objDoc.isMTLComplete());
   
     gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
   }

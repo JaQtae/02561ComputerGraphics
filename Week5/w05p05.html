@@ -124,29 +124,29 @@
         
 
         void main() {
-            gl_PointSize = 20.0;
-            gl_Position = projectionMatrix * viewMatrix * modelMatrix * vPosition;
-
             vec4 normal = (modelMatrix * viewMatrix * vNormal);
             vec4 pos = (modelMatrix * viewMatrix * vPosition);
 
-            vec3 L = (viewMatrix * lightPosition).xyz; // light
+            vec3 L = (viewMatrix * lightPosition).xyz;          // light
 
             // Directions
-            vec3 w_i = lightPosition.w == 0.0 ? normalize(L) : normalize(L - pos.xyz); // Incoming light 
-            vec3 w_o = - normalize((viewMatrix * pos).xyz); // Viewing direction (surface to eye)
-            vec3 w_r = 2.0 * dot(w_i, normalize(normal.xyz)) * normalize(normal.xyz) - w_i; // Reflected light
+            vec3 w_i = lightPosition.w == 0.0 ? normalize(L) : normalize(L - pos.xyz);          // Incoming light 
+            vec3 w_o = - normalize((viewMatrix * pos).xyz);                                     // Viewing direction (surface to eye)
+            vec3 w_r = 2.0 * dot(w_i, normalize(normal.xyz)) * normalize(normal.xyz) - w_i;     // Reflected light
 
             // For this part L_a = L_d = L_s = L_e, so L_i will be used
 
-            L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * vColor.xyz + k_a * vColor.xyz;
+            L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * vColor.xyz;//  + k_a * vColor.xyz;
             // Final float(-) part fixes some issues, as two surfaces "light up" when they should not
-            L_rs = k_s * L_i * pow(max(dot(w_r, w_o), 0.0), s) * float(dot(w_i, normalize(normal.xyz)) > 0.0);
+            L_rs = k_s * L_i * pow(max(dot(w_r, w_o), 0.0), s); // * float(dot(w_i, normalize(normal.xyz)) > 0.0);
             L_ra = k_a * L_i;
 
             L_o = L_rd + L_rs + L_ra;
 
             fColor = vec4(L_o, 1.0); 
+
+            gl_PointSize = 20.0;
+            gl_Position = projectionMatrix * viewMatrix * modelMatrix * vPosition;
         }
         
 
