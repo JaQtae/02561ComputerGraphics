@@ -136,9 +136,9 @@
 
             // For this part L_a = L_d = L_s = L_e, so L_i will be used
 
-            L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * vColor.xyz;//  + k_a * vColor.xyz;
+            L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * vColor.xyz  + k_a * vColor.xyz;
             // Final float(-) part fixes some issues, as two surfaces "light up" when they should not
-            L_rs = k_s * L_i * pow(max(dot(w_r, w_o), 0.0), s); // * float(dot(w_i, normalize(normal.xyz)) > 0.0);
+            L_rs = k_s * L_i * pow(max(dot(w_r, w_o), 0.0), s) * float(dot(w_i, normalize(normal.xyz)) > 0.0); // Glittering problem on backside
             L_ra = k_a * L_i;
 
             L_o = L_rd + L_rs + L_ra;
