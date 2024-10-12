@@ -24,7 +24,7 @@ var k_s = 0.5; // Specular reflection coefficient
 var shininess = 50; // Shininess value
 
 
-window.onload = function init() {
+window.onload = async function init() {
     canvas = document.getElementById("gl-canvas");
     gl = WebGLUtils.setupWebGL(canvas); 
     if (!gl) { 
@@ -97,7 +97,7 @@ window.onload = function init() {
     console.log("Loading OBJ file...")
     g_drawingInfo = await readOBJFile('../Week5/monkey.obj', 1.0, true);
     if (!g_drawingInfo) {
-        console.log('Failed to read OBJ file');
+        console.error('Failed to read OBJ file');
         return;
     }
     console.log("Starting rendering...")
