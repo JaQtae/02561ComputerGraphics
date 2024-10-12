@@ -135,15 +135,15 @@ function draw_object() {
     gl.uniform1f(sLoc, shininess);
     
   
-    // if (!g_drawingInfo && g_objDoc && g_objDoc.isMTLComplete()) {
-    //   // OBJ and all MTLs are available 
-    //   console.log("OBJ loaded and materials complete!");
-    //   g_drawingInfo = onReadComplete(gl, model, g_objDoc);
-    // }
-    // if (!g_drawingInfo) {
-    //     console.log("Drawing info not ready");
-    //     return;
-    // }
+    if (!g_drawingInfo && g_objDoc && g_objDoc.isMTLComplete()) {
+      // OBJ and all MTLs are available 
+      console.log("OBJ loaded and materials complete!");
+      g_drawingInfo = onReadComplete(gl, model, g_objDoc);
+    }
+    if (!g_drawingInfo) {
+        console.log("Drawing info not ready");
+        return;
+    }
   
     gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
   }
