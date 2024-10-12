@@ -35,7 +35,7 @@ window.onload = async function init() {
     gl.clearColor(0.3921, 0.5843, 0.9294, 1.0);
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);   // Enable backface culling
-    gl.frontFace(gl.CCW);      // Counter-clockwise winding is the front face (default)
+    // gl.frontFace(gl.CCW);      // Counter-clockwise winding is the front face (default)
     
     gl.program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(gl.program);
@@ -159,6 +159,7 @@ function initVertexBuffers(gl, program) {
     _obj.cBuffer = createEmptyArrayBuffer(gl, program.vColor, 4, gl.FLOAT);
     _obj.idxBuffer = gl.createBuffer();
     if (!_obj.vBuffer || !_obj.nBuffer || !_obj.cBuffer || !_obj.idxBuffer) {
+        console.error("Failed to create buffers!");
          return null; 
     }
   
@@ -205,7 +206,7 @@ var g_objDoc = null;      // The information of OBJ file
 var g_drawingInfo = null; // The information for drawing 3D model
 
 // OBJ File has been read
-function onReadOBJFile(fileString, fileName, _obj, scale, reverse) {
+function onReadOBJFile(fileString, fileName, gl, _obj, scale, reverse) {
     var objDoc = new OBJDoc(fileName);  // Create a OBJDoc object
     var result = objDoc.parse(fileString, scale, reverse); // Parse the file
     if (!result) {
