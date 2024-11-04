@@ -94,7 +94,7 @@ window.onload = function init() {
         return;
     }
 
-    readOBJFile('monkey.obj', gl, model, 0.5, true);
+    readOBJFile('monkey.obj', gl, model, 1, true);
 
     render();
 
