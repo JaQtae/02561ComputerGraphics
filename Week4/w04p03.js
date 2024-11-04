@@ -21,7 +21,7 @@ var L_e = vec3(1.0, 1.0, 1.0); // Light emission = incident light (L_i) (if V = 
 var L_i = L_e;
 var l_dir = vec3(0.0, 0.0, -1.0); // Direction of light source
 var k_d = 1.0; // Diffuse reflection coefficient
-var lightPosition = vec4(0.0, 0.0, 1.0, 0.0); // Oppossite light direction
+var lightPosition = vec4(0.0, 0.0, 1.0, 1.0); // Oppossite light direction
 
 window.onload = function init() {
     var canvas = document.getElementById("gl-canvas");
