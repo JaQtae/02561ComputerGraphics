@@ -100,9 +100,9 @@
     <script id="vertex-shader" type="x-shader/x-vertex">
         precision mediump float;
 
-        attribute vec3 vPosition;
+        attribute vec4 vPosition;
         attribute vec4 vColor;
-        attribute vec3 vNormal;
+        attribute vec4 vNormal;
 
         uniform mat4 viewMatrix;
         uniform mat4 projectionMatrix;
@@ -124,8 +124,8 @@
         
 
         void main() {
-            vec4 normal = (modelMatrix * viewMatrix * vec4(vNormal, 1.0));
-            vec4 pos = (modelMatrix * viewMatrix * vec4(vPosition, 1.0));
+            vec4 normal = (modelMatrix * viewMatrix * vNormal);
+            vec4 pos = (modelMatrix * viewMatrix * vPosition);
 
             vec3 L = (viewMatrix * lightPosition).xyz;          // light
 
@@ -136,9 +136,9 @@
 
             // For this part L_a = L_d = L_s = L_e, so L_i will be used
 
-            L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * vColor.xyz;
+            L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * vColor.xyz  + k_a * vColor.xyz;
             // Final float(-) part fixes some issues, as two surfaces "light up" when they should not
-            L_rs = k_s * L_i * pow(max(dot(w_r, w_o), 0.0), s); // Glittering problem on backside
+            L_rs = k_s * L_i * pow(max(dot(w_r, w_o), 0.0), s) * float(dot(w_i, normalize(normal.xyz)) > 0.0); // Glittering problem on backside
             L_ra = k_a * L_i;
 
             L_o = L_rd + L_rs + L_ra;
@@ -146,7 +146,7 @@
             fColor = vec4(L_o, 1.0); 
 
             gl_PointSize = 20.0;
-            gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(vPosition,1.0);
+            gl_Position = projectionMatrix * viewMatrix * modelMatrix * vPosition;
         }
         
 
