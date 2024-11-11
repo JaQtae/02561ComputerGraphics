@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worksheet 6.2</title>
+    <style>
+        .cursive {
+            font-style: italic;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+        }
+        h1 {
+            color: #333;
+            margin-top: 20px;
+            font-size: 24px;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #333;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        select {
+            padding: 5px;
+            margin-top: 10px;
+            font-size: 16px;
+            width: 150px;
+            height: auto;
+            cursor: pointer;
+        }
+        h2 {
+            color: #333;
+            margin-top: 20px;
+            font-size: 20px;
+        }
+        .observations {
+            text-align: left;
+            max-width: 600px;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .observations ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+        .observations li {
+            margin-bottom: 10px;
+        }
+        .footer {
+            margin-top: auto;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <h1>Texture and Choices (w6p2)</h1>
+
+    <canvas id="gl-canvas" width="512" height="512"></canvas>
+
+    <label>Wrapping style: <br>
+        <select id="texture_wrap" size="2">
+            <option value="0">Clamp2Edge</option>
+            <option value="1">Repeat</option>
+        </select>
+    </label> <br>
+    
+    <label>Magnification style: <br>
+        <select id="texture_filter_mag" size="2">
+            <option value="0">Nearest</option>
+            <option value="1">Linear</option>
+        </select>
+    </label> <br>
+    
+    <label>Minification style: <br>
+        <select id="texture_filter_min" size="6">
+            <option value="0">Nearest (N)</option>
+            <option value="1">Linear (L)</option>
+            <option value="2">NN MipMap</option>
+            <option value="3">LN MipMap</option>
+            <option value="4">NL MipMap</option>
+            <option value="5">LL MipMap</option>
+        </select>
+    </label> <br>
+
+    <h2>Answer:</h2>
+    <div class="observations">
+        <p class="cursive">Explain the effect of the different filtering modes and their influence on texture magnification and minification issues.</p>
+        <h2>Observations</h2>
+        <ul>
+            <li><strong>Nearest Filtering:</strong> 
+                Maintains a sharp, distinct checkerboard pattern without blurring at any distance, providing a clear view of texture details.
+                Doesn't smooth between texels, so can look pixelated.
+            </li>
+            <li><strong>Linear Filtering:</strong>
+                Produces a smoother texture by blending texels, but also introduces blurriness;
+                this is most noticeable in magnification at close range, and in minification it is present in the further parts.
+                Combining linear filtering in both magnification and minification results in blurring across the entire texture.
+            </li>
+            <li><strong>MipMapping:</strong>
+                <ul>
+                    <li><strong>Nearest Mipmap Nearest (NN):</strong>
+                         Causes a stark transition to a solid gray in distant regions, producing an abrupt, pixelated edge.
+                    </li>
+                    <li><strong>Linear Mipmap Nearest (LN):</strong>
+                        Gradually blurs towards the gray zone, softening the transition but still ending abruptly.
+                        Both NN and LN have a small "indent" into the gray zone in the middle that is rendered.
+                    </li>
+                    <li><strong>Nearest Mipmap Linear (NL)</strong> and <strong>Linear Mipmap Linear (LL):</strong>
+                    Both provide the smoothest transition, with the checkerboard fading evenly to gray across the distance. 
+                    Unlike other modes, these avoid abrupt changes, covering the entire texture along the "split" before the gray zone appears.
+                    The visual quality is enhanced and reduces aliasing by switching to lower-resolution textures when viewed at a distance.
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <div class="footer">
+        Worksheet for 02561 Computer Graphics at DTU (E24) by Jakob Ketmig
+    </div>
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        precision mediump float;
+
+        uniform mat4 viewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat4 modelMatrix;
+
+        attribute vec4 vPosition;
+        attribute vec2 vTexCoord;
+
+        varying vec2 fTexCoord;
+
+        void main() {
+            fTexCoord = vTexCoord;
+            gl_Position = projectionMatrix * viewMatrix * modelMatrix * vPosition;
+        }
+    </script>
+    
+    <script id="fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec2 fTexCoord;
+        uniform sampler2D texMap;
+      
+        void main() {
+            gl_FragColor = texture2D(texMap, fTexCoord);
+        }
+    </script>
+    
+    <script src="../common/webgl-utils.js"></script>
+    <script src="../common/initShaders.js"></script>
+    <script src="../common/OBJParser.js"></script>
+    <script src="../common/MV.js"></script>
+    <script src="../common/webgl-debug.js"></script>
+    <script src="w06p02.js"></script>
+</body>
+</html>

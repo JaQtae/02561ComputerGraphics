@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workseet 5.4</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+        }
+        h1 {
+            color: #333;
+            margin-top: 20px;
+            font-size: 24px;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #333;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        select {
+            padding: 5px;
+            margin-top: 10px;
+            font-size: 16px;
+            width: 150px;
+            height: auto;
+            cursor: pointer;
+        }
+        .footer {
+            margin-top: auto;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <h1>Phong model on .obj (Week 5 Part 4)</h1>
+    <ul>
+        <b>Explain how you obtain and use surface normals, and explain how this relates to the surface smoothness when you are rendering a triangle mesh.</b></li>
+        <p>The surface normals are found as the cross product of two edges of each triangle in the mesh. These are interpolated across the surface at a pixel-wise level in the fragment shader.
+        <br> This allows the shading to appear smooth and curved, despite consisting of flat triangles.
+        </p>
+    </ul>
+
+    <canvas id="gl-canvas" width="512" height="512"></canvas>
+
+    
+    <div class="controls">
+        <div class="control-group">
+            <label> Emitted radiance \(L_e\):</label>
+            <input id="L_e" type="range" min="0" max="2" step="0.1" value="1" oninput="updateValue('L_e_val', this.value)" />
+            <span class="value" id="L_e_val">1</span>
+        </div>
+
+        <div class="control-group">
+            <label> Ambient coeff. \(k_a\):</label>
+            <input id="K_a" type="range" min="0" max="1" step="0.05" value="0.1" oninput="updateValue('K_a_val', this.value)" />
+            <span class="value" id="K_a_val">0.1</span>
+        </div>
+
+        <div class="control-group">
+            <label> Diffuse coeff. \(k_d\):</label>
+            <input id="K_d" type="range" min="0" max="1" step="0.05" value="0.5" oninput="updateValue('K_d_val', this.value)" />
+            <span class="value" id="K_d_val">1.0</span>
+        </div>
+
+        <div class="control-group">
+            <label> Specular coeff. \(k_s\):</label>
+            <input id="K_s" type="range" min="0" max="1" step="0.05" value="0.5" oninput="updateValue('K_s_val', this.value)" />
+            <span class="value" id="K_s_val">0.5</span>
+        </div>
+
+        <div class="control-group">
+            <label> Shininess \(s\):</label>
+            <input id="s" type="range" min="1" max="100" step="1" value="20" oninput="updateValue('s_val', this.value)" />
+            <span class="value" id="s_val">50</span>
+        </div>
+    </div>
+
+
+    <div class="footer">
+        Worksheet for 02561 Computer Graphics at DTU (E24) by Jakob Ketmig
+    </div>
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        precision mediump float;
+
+        uniform mat4 viewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat4 modelMatrix;
+
+        attribute vec4 vPosition;
+        attribute vec4 vColor;
+        attribute vec4 vNormal;
+
+        varying vec4 fPosition;
+        varying vec4 fColor;
+        varying vec4 fNormal;
+
+        void main() {
+            // Send to fragment-shader as world space
+            fPosition = modelMatrix * vPosition;
+            fColor = vColor;
+            fNormal = modelMatrix * vNormal;
+
+            gl_PointSize = 20.0;
+            gl_Position = projectionMatrix * viewMatrix * fPosition; // Convert from model to view->clip space
+        }
+        
+
+        </script>
+        
+        <script id="fragment-shader" type="x-shader/x-fragment">
+            precision mediump float;
+        
+            uniform mat4 viewMatrix;
+            uniform mat4 projectionMatrix;
+            uniform mat4 modelMatrix;
+    
+            varying vec4 fPosition;
+            varying vec4 fColor;
+            varying vec4 fNormal;
+    
+            uniform vec4 lightPosition;
+            uniform vec3 L_i; // Incident light
+            uniform float k_a; // Ambient reflection coefficient
+            uniform float k_d; // Diffuse reflection coefficient
+            uniform float k_s; // Specular reflection coefficient
+            uniform float s; // Shininess coefficient
+            
+            void main() {
+                // World space
+                vec4 normal =  fNormal;
+                vec4 pos = fPosition;
+    
+                vec3 L = lightPosition.xyz; // light
+    
+                // Directions
+                vec3 w_i = lightPosition.w == 0.0 ? normalize(L) : normalize(L - pos.xyz); // Incoming light 
+                vec3 w_o = - normalize(pos.xyz); // Viewing direction (surface to eye)
+                vec3 w_r = 2.0 * dot(w_i, normalize(normal.xyz)) * normalize(normal.xyz) - w_i; // Reflected light
+    
+                // For this part L_a = L_d = L_s = L_e, so L_i will be used
+    
+                vec3 L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * fColor.xyz + k_a * fColor.xyz;
+                // Final float(-) part fixes some issues, as two surfaces "light up" when they should not
+                vec3 L_rs = k_s * L_i * pow(max(dot(w_r, w_o), 0.0), s) * float(dot(w_i, normalize(normal.xyz)) > 0.0);
+                vec3 L_ra = k_a * L_i;
+    
+                vec3 L_o = L_rd + L_rs + L_ra;
+    
+                gl_FragColor = vec4(L_o, 1.0); 
+            }
+        </script>
+        
+        <script src="../common/webgl-utils.js"></script>
+        <script src="../common/initShaders.js"></script>
+        <script src="../common/OBJParser.js"></script>
+        <script src="../common/MV.js"></script>
+        <script src="../common/webgl-debug.js"></script>
+        <script src="w05p04.js"></script>
+</body>
+</html>
