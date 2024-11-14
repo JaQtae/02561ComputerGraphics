@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workseet 7.3</title>
+    <title>Workseet 7.4</title>
     <style>
         .cursive {
             font-style: italic;
@@ -78,7 +78,7 @@
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-    <h1>Reflection</h1>
+    <h1>Bump mapping</h1>
 
     <canvas id="gl-canvas" width="512" height="512"></canvas>
     <button id = "Orbit">Orbit On/Off</button>
@@ -144,13 +144,25 @@
         varying vec4 nw;
         varying vec3 pw;
 
+        uniform sampler2D texNormalMap;
         uniform samplerCube texMap;
         uniform vec3 eye;
         uniform bool reflective;
         
         void main() {
             vec3 iw = normalize(pw - eye); // incidence direction, world-view
-            vec3 rw = reflect(iw, nw.xyz); // reflection direction, world-view
+            
+            vec2 uvMap = vec2( 1.0-atan( nw.z, nw.x )/( 2.0*3.1415 ) , acos( nw.y )/3.1415 );
+
+            vec4 n_ortho = (2.0 * texture2D(texNormalMap, uvMap) - 1.0);
+
+            // following four lines given as function in slides, however, didn't seem to work.
+            float sgn_nz = sign( n_ortho.z + 1.0e-12);
+            float a = - 1.0 / ( 1.0 + abs( n_ortho.z ) );
+            float b = n_ortho.x * n_ortho.y * a;
+            vec3 n_bump = vec3( 1.0 + n_ortho.x * n_ortho.x * a, b, - sgn_nz * n_ortho.x) * nw.x + vec3( sgn_nz * b, sgn_nz * (1.0 + n_ortho.y * n_ortho.y * a), -n_ortho.y) * nw.y + n_ortho.xyz * nw.z;
+
+            vec3 rw = reflect(iw, n_bump.xyz); 
 
             gl_FragColor = fColor * (reflective ? textureCube(texMap, rw) : textureCube(texMap, fTexCoord.xyz)); // World texture coordinates as texture color
 
@@ -162,7 +174,7 @@
         <script src="../common/OBJParser.js"></script>
         <script src="../common/MV.js"></script>
         <script src="../common/webgl-debug.js"></script>
-        <script src="w07p03.js"></script>
+        <script src="w07p04.js"></script>
 
     <div class="footer">
         Worksheet for 02561 Computer Graphics at DTU (E24) by Jakob Ketmig
