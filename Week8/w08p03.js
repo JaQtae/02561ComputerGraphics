@@ -69,10 +69,11 @@ window.onload = function init() {
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.vBuffer); 
     gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArray), gl.STATIC_DRAW);
 
-
     gl.vPosition = gl.getAttribLocation(gl.program, "vPosition");
     gl.vertexAttribPointer(gl.program.vPosition, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(gl.program.vPosition);
+
+
 
 
     gl.texBuffer = gl.createBuffer();

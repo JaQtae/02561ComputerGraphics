@@ -43,7 +43,6 @@ window.onload = async function init() {
     
     gl.program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(gl.program);
-    gl.vBuffer = null;
 
     // Slider Interactivity
     document.getElementById("L_e").oninput = function() {
@@ -98,12 +97,11 @@ window.onload = async function init() {
         return;
     }
 
-    const drawingInfo = await readOBJFile('roadBike.obj', 1, true);
+    const drawingInfo = await readOBJFile('roadbike.obj', 1, true);
     if (drawingInfo) {
       g_drawingInfo = onReadComplete(gl, model, drawingInfo);
       console.log("(Init) Drawing info ready!: " + g_drawingInfo);
     }
-    // readOBJFile('monkey.obj', gl, model, 1, true);
 
     render();
 
@@ -137,7 +135,7 @@ function draw_object() {
     gl.uniform1f(k_sLoc, k_s);
     gl.uniform1f(sLoc, shininess);
   
-    gl.drawElements(gl.LINES, g_drawingInfo.indices.length, gl.UNSIGNED_INT, 0);
+    gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_INT, 0);
   }
 
 
@@ -204,10 +202,6 @@ function onReadComplete(gl, model, objDoc) {
         console.log('Failed to get drawing info.');
         return null;
     }
-    console.log("drawingInfo vertices: " + drawingInfo.vertices);
-    console.log("drawingInfo normals: " + drawingInfo.normals);
-    console.log("drawingInfo colors: " + drawingInfo.colors);
-    console.log("drawingInfo indices: " + drawingInfo.indices);
 
     // Write date into the buffer object
     gl.bindBuffer(gl.ARRAY_BUFFER, model.vBuffer);

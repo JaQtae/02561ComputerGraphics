@@ -191,7 +191,7 @@ window.onload = function init() {
         requestAnimFrame(render);
     }
 
-    // Calculation of MTex
+    // given worksheet
     function getQuadMTex(v, p) {
         var invertedV = inverse(v)
         var invertedP = inverse(p)
