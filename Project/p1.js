@@ -177,8 +177,13 @@ window.onload = async function init()
       g_drawingInfo = onReadComplete(gl, model, drawingInfo);
       console.log("(Init) Drawing info ready!: " + g_drawingInfo);
     }
-    function tick(){     
-            
+    
+    function tick(){   
+        console.log("Orbit is:", orbit);
+        console.log("Alpha is:", alpha);
+        console.log("Light Orbit:", lightOrbit);
+        console.log("Light Position:", lightPosition);  
+        try{
         if (orbit) {
             alpha += 0.01;
             // Adding the orbit
@@ -205,7 +210,10 @@ window.onload = async function init()
         };
         
         render();
-        requestAnimationFrame(tick);
+        requestAnimationFrame(tick);}
+        catch(e){
+            console.log("Error in tick:", e);
+        }
     }
 
     tick();
@@ -218,7 +226,7 @@ window.onload = async function init()
         p = perspective(fovy, canvas.width / canvas.height, near, far);
         m = translate(vec3(0, y_coord, -3));
 
-        gl.depthMask(true); // Enable depth writing for opaque objects
+        gl.depthMask(true); // Enable depth writing for transparent objects
         gl.disable(gl.BLEND); // Disable blending for the reflected teapot
         draw_object(reflect_coeff = 1.0);// Reflected
 
@@ -233,7 +241,6 @@ window.onload = async function init()
         draw_ground(alpha = 0.0); // Shouldn't be rendered for part 1!!
 
         // --- NON-REFLECTED OBJECT --- //
-        gl.depthMask(true); // Enable depth writing for opaque objects
         gl.disable(gl.BLEND); // Disable blending for the reflected teapot
         v = lookAt(eye, at, up);
         p = perspective(fovy, canvas.width / canvas.height, near, far);
@@ -278,7 +285,6 @@ function draw_object(reflect_coeff) {
 
 function draw_ground(alpha) {
     gl.useProgram(program_GROUND);
-    gl.depthMask(false);
 
     gl.uniformMatrix4fv(vLoc_GROUND, false, flatten(v));
     gl.uniformMatrix4fv(pLoc_GROUND, false, flatten(p));
