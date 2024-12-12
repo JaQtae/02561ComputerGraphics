@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workseet 9.1 & 9.2</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+        }
+        h1 {
+            color: #333;
+            margin-top: 20px;
+            font-size: 24px;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #333;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        select {
+            padding: 5px;
+            margin-top: 10px;
+            font-size: 16px;
+            width: 150px;
+            height: auto;
+            cursor: pointer;
+        }
+        .footer {
+            margin-top: auto;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <h1>Shadow mapping (w9p1)</h1>
+
+    <canvas id="gl-canvas" width="512" height="512"></canvas>
+
+    <button id = "Orbit">Light Orbit On/Off</button>
+    <button id = "Jump">Jump On/Off</button>
+
+    <div class="footer">
+        Worksheet for 02561 Computer Graphics at DTU (E24) by Jakob Ketmig
+    </div>
+
+    <script id="vertex-shader-ground" type="x-shader/x-vertex">
+
+    precision mediump float;  
+    
+    attribute vec3 vPosition;
+    attribute vec2 vTexCoord;
+    varying vec2 fTexCoord;
+    varying vec3 fPosition;
+
+    uniform mat4 viewMatrix;
+    uniform mat4 projectionMatrix;
+    uniform mat4 modelMatrix;
+    
+    void main() {
+
+        fTexCoord = vTexCoord;
+        fPosition = vPosition;
+
+        gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(vPosition, 1.0);
+        gl_PointSize = 20.0;
+        
+    }
+    
+    </script>
+
+    <!--
+    FRAGMENT SHADER - GROUND
+    -->
+
+    <script id="fragment-shader-ground" type="x-shader/x-fragment">
+
+    precision mediump float;
+
+    uniform sampler2D texMap;
+    uniform sampler2D u_ShadowMap;
+
+    varying vec2 fTexCoord;
+    varying vec3 fPosition;
+
+    uniform float visibility;
+
+    uniform mat4 modelMatrix;
+    uniform mat4 projectionMatrix;
+    uniform mat4 viewMatrixFromLight;
+
+    void main() {
+
+        // Marble texture
+        vec4 tex = texture2D(texMap, fTexCoord);
+        vec4 marble = vec4(tex.xyz, 1.0);
+
+        vec4 v_PositionFromLight = projectionMatrix * viewMatrixFromLight * modelMatrix * vec4(fPosition, 1.0);
+        vec3 shadowCoord = (v_PositionFromLight.xyz / v_PositionFromLight.w) / 2.0 + 0.5;
+
+        vec4 rgbaDepth = texture2D(u_ShadowMap, shadowCoord.xy);
+
+        float depth = rgbaDepth.r; // Retrieve the z value from R
+
+        float visibility = (shadowCoord.z > depth + 0.005) ? 1.0 : 0.7;
+
+        gl_FragColor = vec4(marble.rgb * visibility, marble.a); // marble -> depth, rgba -> white?
+
+    }
+    </script>
+
+    <!--
+    VERTEX SHADER - TEAPOT
+    -->
+
+    <script id="vertex-shader-teapot" type="x-shader/x-vertex">
+
+    precision mediump float;  
+    
+    attribute vec4 vPosition;
+    attribute vec4 vNormal;
+    attribute vec4 vColor;
+    attribute vec3 planarNormals;
+    
+    varying vec4 fPosition;
+    varying vec4 fNormal;
+    varying vec4 fColor;
+
+    // VPM
+    uniform mat4 viewMatrix;
+    uniform mat4 projectionMatrix;
+    uniform mat4 modelMatrix;
+
+    uniform bool reflected;
+
+    void main() {
+        // Send to fragment-shader as world space
+        fPosition = modelMatrix * vPosition;
+        fColor = vColor;
+        fNormal = modelMatrix * vNormal;
+
+        vec3 up = vec3(0.0, 1.0, 0.0);
+
+        mat4 R;
+        mat4 I = mat4(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+
+        // Construct reflection matrix
+        R[0][0] = 1.0 - 2.0 * up.x * up.x; 
+        R[1][0] = - 2.0 * up.x * up.y;
+        R[2][0] = - 2.0 * up.x * up.z;
+        R[3][0] = 2.0 * dot(vec3(vPosition.x, -1.0, vPosition.z), up) * up.x;
+
+        R[0][1] = - 2.0 * up.x * up.y; 
+        R[1][1] = 1.0 - 2.0 * up.y * up.y;
+        R[2][1] = - 2.0 * up.y * up.z;
+        R[3][1] = 2.0 * dot(vec3(vPosition.x, -1.0, vPosition.z), up) * up.y;
+
+        R[0][2] = - 2.0 * up.x * up.z; 
+        R[1][2] = - 2.0 * up.y * up.z;
+        R[2][2] = 1.0 - 2.0 * up.z * up.z;
+        R[3][2] = 2.0 * dot(vec3(vPosition.x, -1.0, vPosition.z), up) * up.z;
+
+        R[0][3] = 0.0;
+        R[1][3] = 0.0;
+        R[2][3] = 0.0;
+        R[3][3] = 1.0;
+
+
+        gl_Position = projectionMatrix * (reflected ? R:I) * viewMatrix * fPosition;
+        gl_PointSize = 20.0;
+
+    }
+    
+    </script>
+
+    <!--
+    FRAGMENT SHADER - TEAPOT
+    -->
+
+    <script id="fragment-shader-teapot" type="x-shader/x-fragment">
+
+    precision mediump float;
+
+    varying vec4 fPosition;
+    varying vec4 fNormal;
+    varying vec4 fColor;
+
+    uniform vec4 lightPosition;
+    uniform vec3 L_i;
+    uniform float k_a;
+    uniform float k_d;
+    uniform float k_s;
+    uniform float s;
+
+    uniform float visibility;
+    //uniform int use_reflection;
+
+    // VPM
+    uniform mat4 viewMatrix;
+    uniform mat4 projectionMatrix;
+    uniform mat4 modelMatrix;
+
+    void main() {
+        
+        vec4 pos = fPosition;
+        vec4 normal = fNormal;
+
+        vec3 L = lightPosition.xyz; // light
+        vec3 w_i = lightPosition.w == 0.0 ? normalize(L) : normalize(L - pos.xyz);
+
+        vec3 w_r = 2.0 * dot(w_i, normalize(normal.xyz)) * normalize(normal.xyz) - w_i;
+
+        vec3 w_o = - normalize(pos.xyz); 
+
+        vec3 L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * fColor.xyz; // 'color' exchanged with white-RGB 
+        vec3 L_rs = k_s * L_i * pow(max(dot(w_r, w_o), 0.0), s) * float(dot(w_i, normalize(normal.xyz)) > 0.0); 
+
+        vec3 L_ra = k_a * L_i;
+        
+        vec3 L_o = L_rd + L_rs + L_ra;
+
+        gl_FragColor = vec4((visibility * L_o).xyz, 1.0); 
+    }
+    
+    </script>
+
+
+    <!--
+    VERTEX SHADER - SHADOWS
+    -->
+
+    <script id="vShadows" type="x-shader/x-vertex">
+
+    precision mediump float;  
+    
+    attribute vec4 vPosition;
+
+    uniform mat4 viewMatrix;
+    uniform mat4 projectionMatrix;
+    uniform mat4 modelMatrix;
+
+    
+    void main() {
+
+        gl_Position = projectionMatrix * viewMatrix * modelMatrix * vPosition;
+
+    }
+    
+    </script>
+
+    <!--
+    FRAGMENT SHADER - SHADOWS
+    -->
+
+    <script id="fShadows" type="x-shader/x-fragment">
+    
+    precision mediump float; void main() {
+        
+        const vec4 bitShift = vec4(1.0, 256.0, 256.0*256.0, 256.0*256.0*256.0); 
+
+        const vec4 bitMask = vec4(1.0/256.0, 1.0/256.0, 1.0/256.0, 0.0);
+
+        vec4 rgbaDepth = fract(gl_FragCoord.z*bitShift);
+
+        rgbaDepth -= rgbaDepth.gbaa*bitMask;
+
+        gl_FragColor = rgbaDepth; 
+
+    }
+
+    </script>
+
+
+
+    <script type="text/javascript" src="../common/webgl-utils.js"></script>
+    <script type="text/javascript" src="../common/initShaders.js"></script>
+    <script type="text/javascript" src="../common/MV.js"></script>
+    <script type="text/javascript" src="../common/OBJParser.js"></script> 
+    <script type="text/javascript" src="p1.js"></script>
+
+</body>
+</html>
+
