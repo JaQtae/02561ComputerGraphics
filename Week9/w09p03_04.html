@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workseet 9.3 & 9.4</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+        }
+        h1 {
+            color: #333;
+            margin-top: 20px;
+            font-size: 24px;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #333;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        select {
+            padding: 5px;
+            margin-top: 10px;
+            font-size: 16px;
+            width: 150px;
+            height: auto;
+            cursor: pointer;
+        }
+        .footer {
+            margin-top: auto;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <h1>Shadow mapping (w9p3 & p4)</h1>
+
+    <canvas id="gl-canvas" width="512" height="512"></canvas>
+    <button id = "Orbit">Light Orbit On/Off</button>
+    <button id = "Jump">Jump On/Off</button>
+    <button id = "Topview">Topview On/Off</button>
+
+
+
+    <div class="footer">
+        Worksheet for 02561 Computer Graphics at DTU (E24) by Jakob Ketmig
+    </div>
+
+    <script id="vertex-shader-ground" type="x-shader/x-vertex">
+        precision mediump float;
+
+        uniform mat4 viewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat4 modelMatrix;
+
+        attribute vec3 vPosition;
+        attribute vec2 vTexCoord;
+        varying vec2 fTexCoord;
+
+        void main() {
+            // Send to fragment-shader
+            fTexCoord = vTexCoord;
+            gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(vPosition, 1.0); // Convert from model to view->clip space
+        }
+        
+
+    </script>
+        
+    <script id="fragment-shader-ground" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec2 fTexCoord;
+        uniform sampler2D texMap;
+        uniform float visibility;
+
+        void main() {
+            gl_FragColor = vec4(  (visibility * texture2D(texMap, fTexCoord)).xyz, 1.0 );
+            }
+    </script>
+
+    
+
+    <script id="vertex-shader-object" type="x-shader/x-vertex">
+        precision mediump float;
+
+        uniform mat4 viewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat4 modelMatrix;
+
+        attribute vec4 vPosition;
+        attribute vec4 vColor;
+        attribute vec4 vNormal;
+
+        varying vec4 fPosition;
+        varying vec4 fColor;
+        varying vec4 fNormal;
+
+        void main() {
+            // Send to fragment-shader as world space
+            fPosition = modelMatrix * vPosition;
+            fColor = vColor;
+            fNormal = modelMatrix * vNormal;
+
+            gl_PointSize = 20.0;
+            gl_Position = projectionMatrix * viewMatrix * fPosition; // Convert from model to view->clip space
+        }
+        
+
+        </script>
+        
+        <script id="fragment-shader-object" type="x-shader/x-fragment">
+            precision mediump float;
+        
+            uniform mat4 viewMatrix;
+            uniform mat4 projectionMatrix;
+            uniform mat4 modelMatrix;
+    
+            varying vec4 fPosition;
+            varying vec4 fColor;
+            varying vec4 fNormal;
+    
+            uniform vec4 lightPosition;
+            uniform vec3 L_i; // Incident light
+            uniform float k_a; // Ambient reflection coefficient
+            uniform float k_d; // Diffuse reflection coefficient
+            uniform float k_s; // Specular reflection coefficient
+            uniform float s; // Shininess coefficient
+            uniform float visibility;
+            
+            void main() {
+                // World space
+                vec4 normal =  fNormal;
+                vec4 pos = fPosition;
+    
+                vec3 L = lightPosition.xyz; // light
+    
+                // Directions
+                vec3 w_i = lightPosition.w == 0.0 ? normalize(L) : normalize(L - pos.xyz); // Incoming light 
+                vec3 w_o = - normalize(pos.xyz); // Viewing direction (surface to eye)
+                vec3 w_r = 2.0 * dot(w_i, normalize(normal.xyz)) * normalize(normal.xyz) - w_i; // Reflected light
+    
+                // For this part L_a = L_d = L_s = L_e, so L_i will be used
+    
+                vec3 L_rd = k_d * L_i * max(dot(normal.xyz, w_i), 0.0) * fColor.xyz + k_a * fColor.xyz;
+                // Final float(-) part fixes some issues, as two surfaces "light up" when they should not
+                vec3 L_rs = k_s * L_i * pow(max(dot(w_r, w_o), 0.0), s) * float(dot(w_i, normalize(normal.xyz)) > 0.0);
+                vec3 L_ra = k_a * L_i;
+    
+                vec3 L_o = L_rd + L_rs + L_ra;
+                
+                gl_FragColor = vec4( (visibility * L_o).xyz, 1.0); 
+            }
+        </script>
+        
+        <script src="../common/webgl-utils.js"></script>
+        <script src="../common/initShaders.js"></script>
+        <script src="../common/OBJParser.js"></script>
+        <script src="../common/MV.js"></script>
+        <script src="../common/webgl-debug.js"></script>
+        <script src="w09p03_04.js"></script>
+</body>
+</html>
