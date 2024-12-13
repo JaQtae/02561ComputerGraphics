@@ -238,6 +238,11 @@ gl.bindBuffer(gl.ARRAY_BUFFER, model.cBuffer);
 gl.vertexAttribPointer(program_OBJECT.vColor, 4, gl.FLOAT, false, 0, 0);
 gl.enableVertexAttribArray(program_OBJECT.vColor);
 
+console.log("program_TEAPOT: vertexBuffer", model.vBuffer);
+console.log("program_TEAPOT: normalBuffer", model.nBuffer);
+console.log("program_TEAPOT: colorBuffer", model.cBuffer);
+console.log("program_TEAPOT: indexBuffer", model.iBuffer);
+
 gl.uniformMatrix4fv(vLoc_OBJECT, false, flatten(v));
 gl.uniformMatrix4fv(pLoc_OBJECT, false, flatten(p));
 gl.uniformMatrix4fv(mLoc_OBJECT, false, flatten(m));

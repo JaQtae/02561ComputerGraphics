@@ -1,348 +1,402 @@
+// General
+var gl, canvas;
+var model, g_drawingInfo;
+var program_GROUND, program_OBJECT;
+var fbo;
 
-var program_OBJECT; var program_GROUND;
+// Camera
+var v, m;
+// Perspective
+const fovy = 65;
+const near = 0.01;
+const far = 10;
+var p = perspective(fovy, 1.0, near, far);
 
-// View Matrix
+// LookAt()
 var at = vec3(0.0, 0.0, -1.0);
-var up = vec3(0.0, 1.0, 0.0); 
+var up = vec3(0.0, 1.0, 0.0);
 var eye = vec3(0.0, 0.0, 1.0);
 
-var M, V;
-var P = perspective(65, 1.0, 0.01, 10.0);
 
-// Orbit: 
-    var orbit = true; // Orbit on
 
-    var radius = 3.5;
-    var stepsize = 0.75;
-    var lightCenter = vec4(0.0, 3.5, -3.0, 1.0) 
-    var lightOrbit, lightPos; // LightCalculations
-    var epsilon, d, T_lp, T_minuslp // ShadowCalculations
-    var Mp, Ms
+// Calculating view-matrices for the light-source
+var eye_l, at_l, v_l, p_l; 
 
-// Jump:
-    var jump = true;    
-    var y_coord = -0.999; 
-    var Wy = 0.01;
+// Locations
+var lightPositionLoc, l_iLoc, k_aLoc, k_dLoc, k_sLoc, sLoc;
+var vLoc_OBJECT, pLoc_OBJECT, mLoc_OBJECT;
+var vLoc_GROUND, pLoc_GROUND, mLoc_GROUND, vLoc_light_GROUND;
+var vLoc_SHADOW, pLoc_SHADOW, mLoc_SHADOW;
+// Gourad shading vars:
+var L_e = vec3(1.0, 1.0, 1.0); // Light emission = incident light (L_i) (if V = 1 as visibility(V) * L_e)
+var L_i = L_e;
+var lightPosition; // Oppossite light direction
+var k_a = 0.1; // Ambient reflection coefficient
+var k_d = 1.0; // Diffuse reflection coefficient
+var k_s = 0.6; // Specular reflection coefficient
+var s = 50; // Shininess value
 
-// Lighting variables
-    var L_i = vec3(1.0, 1.0, 1.0);
-    // ambient coefficient
-    var k_a = 0.5;
-    // diffuse reflection coefficient
-    var k_d = 0.5;
-    // specular coefficient
-    var k_s = 0.5;
-    // shininess
-    var s = 50;
+// Orbit vars:
+var orbit = true; var radius = 3.5; var alpha = 0.0;
+var lightCenter = vec4(0.0, 3.5, -3.0, 1.0) 
+var lightOrbit, lightPos; // Light calculations
 
-// Setup marble plane coordinates
+// Jump vars:
+var jump = true;    
+var y_coord = -0.999; 
+var Wy = 0.01;
+
+
+// Quad texture (marble):
 var pointsArray = [
-    vec3(2, -1, -1), // Ground quad
-    vec3(2, -1, -5), 
-    vec3(-2, -1, -5), 
-    vec3(-2, -1, -1),
+  vec3(2, -1, -1), 
+  vec3(2, -1, -5), 
+  vec3(-2, -1, -5), 
+  vec3(-2, -1, -1), 
 ];
 
 var texCoords = [
-    vec2(1, 0),
-    vec2(1, 1),
-    vec2(0, 1),
-    vec2(0, 0),
+  vec2(1, 0),
+  vec2(1, 1),
+  vec2(0, 1),
+  vec2(0, 0),
 ];
 
-window.onload = async function init()
-{
-    var canvas = document.getElementById("c");
-    var gl = WebGLUtils.setupWebGL( canvas , { alpha : false });
-    if ( !gl ) { alert( "WebGL isn't available" ); }
-    var ext = gl.getExtension('OES_element_index_uint');
-    if (!ext) {
-      console.log('Warning: Unable to use an extension');
+window.onload = async function init() {
+  canvas = document.getElementById("gl-canvas");
+  gl = WebGLUtils.setupWebGL(canvas, {alpha: false, stencil: true}); // Stencil buffer
+  if (!gl) { 
+      alert("WebGL isn't available"); 
     }
+  
+  var ext = gl.getExtension('OES_element_index_uint');
+  if (!ext) {
+    console.log('Warning: Unable to use an extension');
+  }
 
-    gl.viewport( 0, 0, canvas.width, canvas.height );
-    gl.clearColor(0.3921, 0.5843, 0.9294, 1.0);   
-    gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE);
-    gl.depthFunc(gl.LESS); // Default value
+  // Buttons
+  document.getElementById("Orbit").onclick = function(){
+    orbit = !orbit;
+  };
+  document.getElementById("Jump").onclick = function() { jump = !jump };
 
-    // Handling orbit on/off
-    document.getElementById("Orbit").onclick = function() { orbit = !orbit };
-    // Handling jump on/off
-    document.getElementById("Jump").onclick = function() { jump = !jump };
-    
-    // attach shaders to program
-    program_GROUND = initShaders(gl, "vertex-shader-ground", "fragment-shader-ground");
-    program_OBJECT = initShaders(gl, "vertex-shader-teapot", "fragment-shader-teapot");
-    program_SHADOW = initShaders(gl, "vShadows", "fShadows");
-    
-    // Coupling VPM to shaders
-    var vLoc_OBJECT = gl.getUniformLocation(program_OBJECT, "viewMatrix");
-    var pLoc_OBJECT = gl.getUniformLocation(program_OBJECT, "projectionMatrix");
-    var mLoc_OBJECT = gl.getUniformLocation(program_OBJECT, "modelMatrix");
-    var vLoc_GROUND = gl.getUniformLocation(program_GROUND, "viewMatrix");   
-    var vLoc_light_GROUND = gl.getUniformLocation(program_GROUND, "viewMatrixFromLight");   
-    var pLoc_GROUND = gl.getUniformLocation(program_GROUND, "projectionMatrix");    
-    var mLoc_GROUND = gl.getUniformLocation(program_GROUND, "modelMatrix");  
-    var vLoc_SHADOW = gl.getUniformLocation(program_SHADOW, "viewMatrix");          
-    var pLoc_SHADOW = gl.getUniformLocation(program_SHADOW, "projectionMatrix");    
-    var mLoc_SHADOW = gl.getUniformLocation(program_SHADOW, "modelMatrix");  
+  // Initialize shaders for Quad and Teapot
+  program_OBJECT = initShaders(gl, "vertex-shader-object", "fragment-shader-object");
+  program_GROUND = initShaders(gl, "vertex-shader-ground", "fragment-shader-ground");
+  program_SHADOW = initShaders(gl, "vertex-shader-shadows", "fragment-shader-shadows");
 
-    // coupling lighting to shaders
-    var lightPosLoc = gl.getUniformLocation(program_OBJECT, "lightPos");
-    var liLoc = gl.getUniformLocation(program_OBJECT, "L_i");
-    var kaLoc = gl.getUniformLocation(program_OBJECT, "k_a");
-    var kdLoc = gl.getUniformLocation(program_OBJECT, "k_d");
-    var ksLoc = gl.getUniformLocation(program_OBJECT, "k_s");
-    var sLoc = gl.getUniformLocation(program_OBJECT, "s");
+  // Quad texture loading 
+  var image = document.createElement('img');
+  image.crossorigin = 'anonymous';
+  image.onload = function () {
+      gl.useProgram(program_GROUND);
+      program_GROUND.texture = gl.createTexture();
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, program_GROUND.texture);
 
-    // --- GROUND ---:
-    gl.useProgram(program_GROUND);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
-    // coupling attributes to shaders
-    program_GROUND.vPosition = gl.getAttribLocation(program_GROUND, "vPosition");
-    program_GROUND.vTexel = gl.getAttribLocation(program_GROUND, "vTexel"); 
 
-    // Vertex Buffer - 1. Creation
-    program_GROUND.vBuffer = gl.createBuffer();
-    program_GROUND.vBuffer.num = 3; program_GROUND.vBuffer.type = gl.FLOAT;
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.uniform1i(gl.getUniformLocation(program_GROUND, "texMap"), 0);
 
-    // Vertex Buffer - 2. Connection
-    gl.bindBuffer(gl.ARRAY_BUFFER, program_GROUND.vBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArray), gl.STATIC_DRAW);  
-    gl.vertexAttribPointer(program_GROUND.vPosition, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(program_GROUND.vPosition);
 
-    // Texel Buffer - 1. Creation
-    program_GROUND.tBuffer = gl.createBuffer();
-    program_GROUND.tBuffer.num = 2; program_GROUND.tBuffer.type = gl.FLOAT;
-
-    // Texel Buffer - 2. Connection
-    gl.bindBuffer(gl.ARRAY_BUFFER, program_GROUND.tBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(texCoords), gl.STATIC_DRAW);
-    gl.vertexAttribPointer(program_GROUND.vTexel, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(program_GROUND.vTexel);
-
-    // Sending IMAGE-TEXTURE to Buffer
-    var image = document.createElement('img');
-
-    image.crossorigin = 'anonymous';
-
-    // Image-load function
-    image.onload = function () {
-
-        gl.useProgram(program_GROUND)
-        // texture object
-        program_GROUND.texture = gl.createTexture();
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, program_GROUND.texture);
-        
-        // Magnification and Minification parameters
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    
-        // Upload texture map
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.uniform1i(gl.getUniformLocation(program_GROUND, "texMap"), 0);
-
+  
     };
+  image.src = 'xamp23.png'; 
 
-    image.src = "xamp23.png";
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.clearColor(0.3921, 0.5843, 0.9294, 1.0);
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.CULL_FACE);   // Enable backface culling
+  gl.frontFace(gl.CCW);      // Counter-clockwise winding is the front face (default)
+  
 
-    // --- TEAPOT ---:
-    gl.useProgram(program_OBJECT); // specify program
+  // ------------ OBJECT ------------- //
+  program_OBJECT.vPosition = gl.getAttribLocation(program_OBJECT, 'vPosition');
+  program_OBJECT.vNormal = gl.getAttribLocation(program_OBJECT, 'vNormal');
+  program_OBJECT.vColor = gl.getAttribLocation(program_OBJECT, 'vColor');
 
-    // coupling attributes to shaders
-    program_OBJECT.vPosition = gl.getAttribLocation(program_OBJECT, "vPosition");
-    program_OBJECT.vNormals = gl.getAttribLocation(program_OBJECT, "vNormals");
-    program_OBJECT.vColor = gl.getAttribLocation(program_OBJECT, "vColor")
+  vLoc_OBJECT = gl.getUniformLocation(program_OBJECT, 'viewMatrix')
+  pLoc_OBJECT = gl.getUniformLocation(program_OBJECT, 'projectionMatrix');
+  mLoc_OBJECT = gl.getUniformLocation(program_OBJECT, 'modelMatrix');
 
-    // init buffers
-    model = initVertexBuffers(gl, program_OBJECT);
+  lightPositionLoc = gl.getUniformLocation(program_OBJECT, 'lightPosition')
+  l_iLoc = gl.getUniformLocation(program_OBJECT, 'L_i')
+  k_aLoc = gl.getUniformLocation(program_OBJECT, 'k_a')
+  k_dLoc = gl.getUniformLocation(program_OBJECT, 'k_d')
+  k_sLoc = gl.getUniformLocation(program_OBJECT, 'k_s')
+  sLoc = gl.getUniformLocation(program_OBJECT, 's')
 
-    // init frame-buffer object:
-    texwidth = 512.0; // 2048
-    texheight = 512.0;
-    var fbo = initFramebufferObject(gl, texwidth, texheight);
-    
-    // Read OBJ
-    const drawingInfo = await readOBJFile('teapot.obj', 0.25, true);
-    if (drawingInfo) {
-      g_drawingInfo = onReadComplete(gl, model, drawingInfo);
-      console.log("(Init) Drawing info ready!: " + g_drawingInfo);
+  // ------------ SHADOW ------------- //
+  vLoc_SHADOW = gl.getUniformLocation(program_SHADOW, "viewMatrix");          
+  pLoc_SHADOW = gl.getUniformLocation(program_SHADOW, "projectionMatrix");    
+  mLoc_SHADOW = gl.getUniformLocation(program_SHADOW, "modelMatrix");  
+
+  model = initVertexBuffers(gl, program_OBJECT);
+  if (!model) {
+      console.log('Failed to set the vertex information');
+      return;
+  }
+
+  fbo = initFramebufferObject(gl, 512.0, 512.0);
+
+  const drawingInfo = await readOBJFile('teapot.obj', 0.25, true);
+  if (drawingInfo) {
+    g_drawingInfo = onReadComplete(gl, model, drawingInfo);
+    console.log("(Init) Drawing info ready!: " + g_drawingInfo);
+  }
+
+  // ------------ GROUND ------------- //
+  
+  program_GROUND.vBuffer = gl.createBuffer();
+  program_GROUND.vBuffer.num = 3; program_GROUND.vBuffer.type = gl.FLOAT;
+  gl.bindBuffer(gl.ARRAY_BUFFER, program_GROUND.vBuffer); 
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArray), gl.STATIC_DRAW);
+
+  program_GROUND.vPosition = gl.getAttribLocation(program_GROUND, "vPosition");
+  gl.vertexAttribPointer(program_GROUND.vPosition, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(program_GROUND.vPosition);
+
+
+  program_GROUND.texBuffer = gl.createBuffer();
+  program_GROUND.texBuffer.num = 2; program_GROUND.texBuffer.type = gl.FLOAT;
+  gl.bindBuffer(gl.ARRAY_BUFFER, program_GROUND.texBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(texCoords), gl.STATIC_DRAW);
+
+  program_GROUND.vTexCoord = gl.getAttribLocation(program_GROUND, "vTexCoord");
+  gl.vertexAttribPointer(program_GROUND.vTexCoord, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(program_GROUND.vTexCoord);
+
+  mLoc_GROUND = gl.getUniformLocation(program_GROUND, "modelMatrix");
+  vLoc_GROUND = gl.getUniformLocation(program_GROUND, "viewMatrix");
+  pLoc_GROUND = gl.getUniformLocation(program_GROUND, "projectionMatrix");
+  vLoc_light_GROUND = gl.getUniformLocation(program_GROUND, "viewMatrixFromLight");   
+
+
+
+  function tick() {
+      if (orbit) {
+        alpha += 0.01;
+
+        // Adding the orbit
+        lightOrbit =  vec4(radius * Math.sin(alpha), 0.0, radius * Math.cos(alpha), 0.0);
+        lightPosition = vec4(lightOrbit[0] + lightCenter[0], lightOrbit[1] + lightCenter[1], lightOrbit[2] + lightCenter[2], lightOrbit[3] + lightCenter[3]);
+
+
     }
-    
-    function tick(){     
-            
-        if (orbit) {
-            stepsize += 0.01;
-            // Adding the orbit
-            lightOrbit = vec4(radius * Math.sin(stepsize), 0.0, radius * Math.cos(stepsize), 0.0);
-            lightPos = vec4(lightOrbit[0] + lightCenter[0], lightOrbit[1] + lightCenter[1], lightOrbit[2] + lightCenter[2], lightOrbit[3] + lightCenter[3]);
-        };
+
+        gl.useProgram(program_OBJECT);
+        m = translate(vec3(0.0, y_coord, -3.0));
 
         gl.useProgram(program_OBJECT) // specify program
         // Sending lighting information to buffer
-        gl.uniform4fv(lightPosLoc, lightPos);
-        gl.uniform3fv(liLoc, L_i);
-        gl.uniform1f(kaLoc, k_a);
-        gl.uniform1f(kdLoc, k_d);
-        gl.uniform1f(ksLoc, k_s);
+        gl.uniform4fv(lightPositionLoc, lightPosition);
+        gl.uniform3fv(l_iLoc, L_i);
+        gl.uniform1f(k_aLoc, k_a);
+        gl.uniform1f(k_dLoc, k_d);
+        gl.uniform1f(k_sLoc, k_s);
         gl.uniform1f(sLoc, s);
-        
-        M = translate(vec3(0.0, y_coord, -3.0)); 
 
         // Calculating view-matrices for the light-source
-        eye_l = vec3(lightPos[0], lightPos[1], lightPos[2]);
+        eye_l = vec3(lightPosition[0], lightPosition[1], lightPosition[2]);
         at_l = vec3(0.0, -1.0, -3.0);
 
         // View and Perspective matrices for light-source:
-        V_l = lookAt(eye_l, at_l, up);
-        P_l = perspective(65, 1.0, 0.01, 10.0);
+        v_l = lookAt(eye_l, at_l, up);
+        p_l = p
 
-        if (jump) {
-            if (y_coord.toFixed(2) == -1.0) { Wy = 0.01; }
-            if (y_coord.toFixed(2) == 0.0) { Wy = -0.01; }
-            y_coord += Wy;
-        }
-        
-        render();
-        requestAnimationFrame(tick);
+    if (jump) {
+        if (y_coord.toFixed(2) == -1.0) { Wy = 0.01; }
+        if (y_coord.toFixed(2) == 0.0) { Wy = -0.01; }
+        y_coord += Wy;
     }
 
-    tick();
+      render();
+      requestAnimationFrame(tick);
+  }
 
-    function render() {
 
-        // ---- SHADOWS ----:
-        // Initialize framebuffeer
+  tick();
+
+  function render() {
+
+        // Init -> Set viewport -> Clear buffers -> SHADOW
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); 
 
         // Viewport and clearing buffers
         gl.viewport(0, 0, fbo.width, fbo.height);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        // ---- Teapot Shadow ----:
+
+        // ------------ SHADOW ------------ //
         gl.useProgram(program_SHADOW) // specify program
-
-        // Initializing variables
-        initAttributeVariable(gl, program_OBJECT.vPosition, model.vertexBuffer);
-        initAttributeVariable(gl, program_OBJECT.vNormals, model.normalBuffer);
-        initAttributeVariable(gl, program_OBJECT.vColor, model.colorBuffer);                
         
+        // Send object information to shadow shaders
+        gl.bindBuffer(gl.ARRAY_BUFFER, model.vBuffer);
+        gl.vertexAttribPointer(program_OBJECT.vPosition, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(program_OBJECT.vPosition);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, model.nBuffer);
+        gl.vertexAttribPointer(program_OBJECT.vNormal, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(program_OBJECT.vNormal);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, model.cBuffer);
+        gl.vertexAttribPointer(program_OBJECT.vColor, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(program_OBJECT.vColor);
+
+
         // Sending VPM to buffer
-        gl.uniformMatrix4fv(mLoc_SHADOW, false, flatten(M));
-        gl.uniformMatrix4fv(vLoc_SHADOW, false, flatten(V_l));
-        gl.uniformMatrix4fv(pLoc_SHADOW, false, flatten(P_l));
-        
-        // Drawing teapot
-        gl.disable(gl.CULL_FACE); // To make shadows appear regardless of light position
-        gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
+        gl.uniformMatrix4fv(mLoc_SHADOW, false, flatten(m));
+        gl.uniformMatrix4fv(vLoc_SHADOW, false, flatten(v_l));
+        gl.uniformMatrix4fv(pLoc_SHADOW, false, flatten(p_l));
 
-        // End of framebuffer
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.disable(gl.CULL_FACE);
+        gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_INT, 0);
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null); // Unbind framebuffer
+    
+            
         
-        
-        
-        // ---- Regular Drawing ----:
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        // ---- TEAPOT ----:
-        gl.useProgram(program_OBJECT) // specify program
-        // bind buffers, enable attributes
-        initAttributeVariable(gl, program_OBJECT.vPosition, model.vertexBuffer);
-        initAttributeVariable(gl, program_OBJECT.vNormals, model.normalBuffer);
-        initAttributeVariable(gl, program_OBJECT.vColor, model.colorBuffer);
+        // ------------ GROUND ------------ //
+        // REFLECTOR:
+        gl.enable(gl.STENCIL_TEST);
+        gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+        gl.stencilFunc(gl.ALWAYS, 1, 0xff);
+        gl.stencilMask(0xff);
+        gl.depthMask(false);
+        gl.colorMask(false, false, false, false);
 
-        // Sending VPM to buffer
-        V = lookAt(eye, at, up);
-        M = translate(vec3(0.0, y_coord, -3.0)); 
-        gl.uniformMatrix4fv(mLoc_OBJECT, false, flatten(M));
-        gl.uniformMatrix4fv(vLoc_OBJECT, false, flatten(V));
-        gl.uniformMatrix4fv(pLoc_OBJECT, false, flatten(P));
-        gl.uniform1f(gl.getUniformLocation(program_OBJECT, "visibility"), 1.0); // Visibility: 1 --> Colored
-        gl.uniform1i(gl.getUniformLocation(program_OBJECT, "reflected"), 1); // Reflected: 1 --> reflected
-
-        // Drawing teapot
-        gl.disable(gl.CULL_FACE); // To make certain parts of teapot non-see-through
-        gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
-
-        // Sending VPM to buffer
-        V = lookAt(eye, at, up);
-        M = translate(vec3(0.0, y_coord, -3.0)); 
-        gl.uniformMatrix4fv(mLoc_OBJECT, false, flatten(M));
-        gl.uniformMatrix4fv(vLoc_OBJECT, false, flatten(V));
-        gl.uniformMatrix4fv(pLoc_OBJECT, false, flatten(P));
-        gl.uniform1f(gl.getUniformLocation(program_OBJECT, "visibility"), 1.0); // Visibility: 1 --> Colored
-        gl.uniform1i(gl.getUniformLocation(program_OBJECT, "reflected"), 0); // Reflected: 1 --> reflected
-
-        // Drawing teapot
-        gl.disable(gl.CULL_FACE); // To make certain parts of teapot non-see-through
-        gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
+        v = lookAt(eye, at, up);
+        m = mat4();
+        draw_ground(alpha_coeff = 1.0);
 
 
+        // ------------ OBJECT (TEAPOT) ------------ //
 
-        // ---- GROUND QUAD ----:
-        gl.useProgram(program_GROUND); // specify program
+        v = lookAt(eye, at, up);
+        m = translate(vec3(0, y_coord, -3)); // Teapot position
+        draw_object(reflect_coeff = 1.0);
 
-        // Sending the previously calculated ShadowMap (texture) to the ground shader. 
-        // Binding to texture
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, fbo.texture);
-        gl.uniform1i(gl.getUniformLocation(program_GROUND, "u_ShadowMap"), 1);
-        gl.uniform1f(gl.getUniformLocation(program_GROUND, "alpha"), 0.6);
-
-        // bind buffers, enable attributes
-        initAttributeVariable(gl, program_GROUND.vPosition, program_GROUND.vBuffer);
-        initAttributeVariable(gl, program_GROUND.vTexel, program_GROUND.tBuffer);
-
-        // Sending VPM to buffer
-        V = lookAt(eye, at, up);
-        M = mat4();
-        gl.uniformMatrix4fv(mLoc_GROUND, false, flatten(M));
-        gl.uniformMatrix4fv(vLoc_GROUND, false, flatten(V));
-        gl.uniformMatrix4fv(vLoc_light_GROUND, false, flatten(V_l));
-        gl.uniformMatrix4fv(pLoc_GROUND, false, flatten(P));
-
-        // DRAWING
-        gl.enable(gl.CULL_FACE); 
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); 
-        gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-        gl.disable(gl.BLEND);
+        gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+        gl.stencilFunc(gl.EQUAL, 1, 0xFF);
+        gl.stencilMask(0x00);
+        gl.depthMask(true);
+        gl.colorMask(true, true, true, true);
 
 
-    };
-};
+        v = lookAt(eye, at, up);
+        m = translate(vec3(0, y_coord, -3)); // Teapot position
+        draw_object(reflect_coeff = 0.0);
+
+        v = lookAt(eye, at, up);
+        m = mat4();
+        draw_ground(alpha_coeff = 0.6);
+
+  };
+}
+
+
+function draw_object(reflect_coeff) {
+    gl.useProgram(program_OBJECT);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, model.vBuffer);
+    gl.vertexAttribPointer(program_OBJECT.vPosition, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(program_OBJECT.vPosition);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, model.nBuffer);
+    gl.vertexAttribPointer(program_OBJECT.vNormal, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(program_OBJECT.vNormal);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, model.cBuffer);
+    gl.vertexAttribPointer(program_OBJECT.vColor, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(program_OBJECT.vColor);
+
+    gl.uniformMatrix4fv(vLoc_OBJECT, false, flatten(v));
+    gl.uniformMatrix4fv(pLoc_OBJECT, false, flatten(p));
+    gl.uniformMatrix4fv(mLoc_OBJECT, false, flatten(m));
+    gl.uniform1f(gl.getUniformLocation(program_OBJECT, "visibility"), 1.0);
+    gl.uniform1f(gl.getUniformLocation(program_OBJECT, "reflected"), reflect_coeff);
+
+
+    gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+    gl.stencilFunc(gl.EQUAL, 1, 0xFF);
+    gl.stencilMask(0x00);
+    gl.depthMask(true);
+    gl.colorMask(true, true, true, true);
+    gl.disable(gl.CULL_FACE);
+    gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_INT, 0);
+    gl.disable(gl.STENCIL_TEST);
+}
+
+function draw_ground(alpha_coeff) {
+    gl.useProgram(program_GROUND);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, fbo.texture);
+    gl.uniform1i(gl.getUniformLocation(program_GROUND, "u_ShadowMap"), 1);
+
+
+    initAttributeVariable(gl, program_GROUND.vPosition, program_GROUND.vBuffer);
+    initAttributeVariable(gl, program_GROUND.vTexCoord, program_GROUND.texBuffer);
+
+    gl.uniformMatrix4fv(vLoc_GROUND, false, flatten(v));
+    gl.uniformMatrix4fv(pLoc_GROUND, false, flatten(p));
+    gl.uniformMatrix4fv(mLoc_GROUND, false, flatten(m));
+    gl.uniformMatrix4fv(vLoc_light_GROUND, false, flatten(v_l));
+    gl.uniform1f(gl.getUniformLocation(program_GROUND, "visibility"), 1.0);
+    gl.uniform1f(gl.getUniformLocation(program_GROUND, "alpha"), alpha_coeff);
+
+    gl.enable(gl.CULL_FACE)
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.drawArrays( gl.TRIANGLE_FAN, 0, 4);
+    gl.disable(gl.BLEND);
+}
+
+
+//------------- LOAD OBJECT FUNCTIONS  -----------------//
 
 function initAttributeVariable(gl, attribute, buffer) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.vertexAttribPointer(attribute, buffer.num, buffer.type, false, 0, 0);
-    gl.enableVertexAttribArray(attribute);
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+gl.vertexAttribPointer(attribute, buffer.num, buffer.type, false, 0, 0);
+gl.enableVertexAttribArray(attribute);
 };
 
-// Create a buffer object and perform the initial configuration
+// Create an buffer object and perform an initial configuration
 function initVertexBuffers(gl, program) {
-    var o = new Object();
-    o.vertexBuffer = createEmptyArrayBuffer(gl, program.vPosition, 4, gl.FLOAT);
-    o.vertexBuffer.num = 4; o.vertexBuffer.type = gl.FLOAT;
-    o.normalBuffer = createEmptyArrayBuffer(gl, program.vNormal, 4, gl.FLOAT);
-    o.normalBuffer.num = 4; o.normalBuffer.type = gl.FLOAT;
-    o.colorBuffer = createEmptyArrayBuffer(gl, program.vColor, 4, gl.FLOAT);
-    o.colorBuffer.num = 4; o.colorBuffer.type = gl.FLOAT;
-    o.indexBuffer = gl.createBuffer();
-    
-    return o;
+  var _obj = new Object(); // Utilize Object object to return multiple buffer objects
+  _obj.vBuffer = createEmptyArrayBuffer(gl, program.vPosition, 4, gl.FLOAT);
+  _obj.vBuffer.num = 4; _obj.vBuffer.type = gl.FLOAT;
+  _obj.nBuffer = createEmptyArrayBuffer(gl, program.vNormal, 4, gl.FLOAT);
+  _obj.nBuffer.num = 4; _obj.nBuffer.type = gl.FLOAT;
+  _obj.cBuffer = createEmptyArrayBuffer(gl, program.vColor, 4, gl.FLOAT);
+  _obj.cBuffer.num = 4; _obj.cBuffer.type = gl.FLOAT;
+  _obj.idxBuffer = gl.createBuffer();
+  if (!_obj.vBuffer || !_obj.nBuffer || !_obj.cBuffer || !_obj.idxBuffer) {
+       return null; 
+  }
+
+  return _obj;
 };
 
+// Create a buffer object, assign it to attribute variables, and enable the assignment
 function createEmptyArrayBuffer(gl, a_attribute, num, type) {
-    var buffer = gl.createBuffer(); // Create a buffer object
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.vertexAttribPointer(a_attribute, num, type, false, 0, 0);
-    gl.enableVertexAttribArray(a_attribute); // Enable the assignment
-    
-    return buffer;
-};
+  var buffer = gl.createBuffer();  // Create a buffer object
+  if (!buffer) {
+      console.log('Failed to create the buffer object.');
+      return null;
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.vertexAttribPointer(a_attribute, num, type, false, 0, 0);  // Assign the buffer object to the attribute variable
+  gl.enableVertexAttribArray(a_attribute);  // Enable the assignment
+
+  return buffer;
+}
 
 
 async function readOBJFile(fileName, scale, reverse)
@@ -365,31 +419,35 @@ else {
 }
 }
 
-var g_objDoc = null; // The information of OBJ file
+var g_objDoc = null;      // The information of OBJ file
 var g_drawingInfo = null; // The information for drawing 3D model
 
 
- // OBJ File has been read completely
 function onReadComplete(gl, model, objDoc) {
-    // Acquire the vertex coordinates and colors from OBJ file
-    var drawingInfo = objDoc;
-    
-    // Write date into the buffer object
-    gl.bindBuffer(gl.ARRAY_BUFFER, model.vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, drawingInfo.vertices,gl.STATIC_DRAW);
-    
-    gl.bindBuffer(gl.ARRAY_BUFFER, model.normalBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, drawingInfo.normals, gl.STATIC_DRAW);
-    
-    gl.bindBuffer(gl.ARRAY_BUFFER, model.colorBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, drawingInfo.colors, gl.STATIC_DRAW);
-    
-    // Write the indices to the buffer object
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, drawingInfo.indices, gl.STATIC_DRAW);
-    
-    return drawingInfo;   
-};
+  // Acquire the vertex coordinates and colors from OBJ file
+  var drawingInfo = objDoc;
+
+  if (!drawingInfo) {
+      console.log('Failed to get drawing info.');
+      return null;
+  }
+
+  // Write date into the buffer object
+  gl.bindBuffer(gl.ARRAY_BUFFER, model.vBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, drawingInfo.vertices, gl.STATIC_DRAW);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, model.nBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, drawingInfo.normals, gl.STATIC_DRAW);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, model.cBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, drawingInfo.colors, gl.STATIC_DRAW);
+
+  // Write the indices to the buffer object
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.idxBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, drawingInfo.indices, gl.STATIC_DRAW);
+
+  return drawingInfo;
+}
 
 function initFramebufferObject(gl, width, height) {
 
@@ -400,7 +458,7 @@ function initFramebufferObject(gl, width, height) {
     gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
 
     var shadowMap = gl.createTexture(); 
-    gl.activeTexture(gl.TEXTURE1); // OBS ER DER NOGET SJOVT MED TEXTURE 0 / 1?
+    gl.activeTexture(gl.TEXTURE1); 
     gl.bindTexture(gl.TEXTURE_2D, shadowMap); 
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
