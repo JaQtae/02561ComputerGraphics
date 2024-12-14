@@ -97,7 +97,7 @@ window.onload = async function init() {
         return;
     }
 
-    const drawingInfo = await readOBJFile('roadbike.obj', 1, true);
+    const drawingInfo = await readOBJFile('roadBike.obj', 1, true);
     if (drawingInfo) {
       g_drawingInfo = onReadComplete(gl, model, drawingInfo);
       console.log("(Init) Drawing info ready!: " + g_drawingInfo);

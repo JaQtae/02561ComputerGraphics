@@ -233,9 +233,9 @@ window.onload = async function init() {
         m = translate(vec3(0, y_coord, -3)); // Teapot position
         draw_object(reflect_coeff = 1.0);
 
-        v = lookAt(eye, at, up);
-        m = mat4();
-        draw_ground(alpha_coeff = 0.6);
+        // v = lookAt(eye, at, up);
+        // m = mat4();
+        // draw_ground(alpha_coeff = 0.6);
 
         // ------------ OBJECT (TEAPOT) ------------ //
         v = lookAt(eye, at, up);
